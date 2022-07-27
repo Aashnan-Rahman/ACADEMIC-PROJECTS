@@ -1,0 +1,27 @@
+# depslib dependency file v1.0
+1627161787 source:c:\users\sanzi\documents\190041238 cse 4302\project\samp\student.cpp
+	<bits/stdc++.h>
+	"Student.h"
+	<ctime>
+
+1627138077 c:\users\sanzi\documents\190041238 cse 4302\project\samp\student.h
+	<string>
+
+1627138469 source:c:\users\sanzi\documents\190041238 cse 4302\project\samp\main.cpp
+	<iostream>
+	<fstream>
+	"Student.h"
+
+1635273630 source:c:\users\sanzi\documents\190041238 cse 4302\project\samp_final\main.cpp
+	<iostream>
+	<fstream>
+	"Student.h"
+
+1635273950 c:\users\sanzi\documents\190041238 cse 4302\project\samp_final\student.h
+	<string>
+
+1635274744 source:c:\users\sanzi\documents\190041238 cse 4302\project\samp_final\student.cpp
+	<bits/stdc++.h>
+	"Student.h"
+	<ctime>
+
