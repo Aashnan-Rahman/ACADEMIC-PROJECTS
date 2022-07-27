@@ -1,0 +1,2 @@
+# NimBus
+The game is based on the mathematical game of strategy called NIM where two players take turns to remove objects from distinct stacks and the player drawing the last object or simply clearing the last remaining stack is the winner.In the game of NIMBUS a player is allowed to draw only one or two elements from any stack in turns. The player clearing a stack is rewarded a point and the player with the most points is regarded as the winner.
