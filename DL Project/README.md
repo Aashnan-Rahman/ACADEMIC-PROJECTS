@@ -1,4 +1,7 @@
-# FightLadder: A Benchmark for Competitive Multi-Agent Reinforcement Learning
+# Understanding Reinforcement Learning Agents
+Through Mutual Information Probing: A
+Comparative Study of Training Paradigms in
+Fighting Games
 
 ## Setup
 
