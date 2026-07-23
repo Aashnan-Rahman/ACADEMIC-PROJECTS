@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ADIP Watermark Portal</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Advanced Digital Image Processing</p>
+        <h1>ADIP Watermark Portal</h1>
+      </div>
+      <a class="ghost-link" href="./ADIP_Project_v4_3.ipynb" download>Notebook</a>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div>
+          <h2>DWT + DCT Image Watermarking</h2>
+          <p>
+            This portal follows the notebook workflow: convert images to grayscale, resize and
+            binarize the watermark, pad the cover image, embed watermark bits in the HL wavelet
+            sub-band with 8 x 8 DCT blocks, reconstruct, compare quality, and extract the mark.
+          </p>
+        </div>
+        <div class="method-grid" aria-label="Notebook workflow">
+          <span>Upload</span>
+          <span>Grayscale</span>
+          <span>Pad</span>
+          <span>DWT</span>
+          <span>DCT Embed</span>
+          <span>Extract</span>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="controls" aria-label="Embedding controls">
+          <h2>Inputs</h2>
+          <label class="dropzone">
+            <span>Cover image</span>
+            <input id="coverInput" type="file" accept="image/*">
+          </label>
+          <label class="dropzone">
+            <span>Watermark image</span>
+            <input id="watermarkInput" type="file" accept="image/*">
+          </label>
+
+          <h2>Embedding Controls</h2>
+          <label>
+            DWT level
+            <input id="levelInput" type="range" min="1" max="4" step="1" value="3">
+            <output id="levelValue">3</output>
+          </label>
+          <label>
+            Alpha strength
+            <input id="alphaInput" type="range" min="5" max="250" step="5" value="100">
+            <output id="alphaValue">100</output>
+          </label>
+          <label>
+            Watermark threshold
+            <input id="thresholdInput" type="range" min="0" max="255" step="1" value="127">
+            <output id="thresholdValue">127</output>
+          </label>
+          <label>
+            Processing max side
+            <input id="maxSideInput" type="range" min="512" max="1600" step="128" value="1024">
+            <output id="maxSideValue">1024 px</output>
+          </label>
+          <div class="pair">
+            <label>
+              DCT row
+              <input id="dctYInput" type="number" min="1" max="6" value="3">
+            </label>
+            <label>
+              DCT column
+              <input id="dctXInput" type="number" min="1" max="6" value="3">
+            </label>
+          </div>
+          <button id="runButton" type="button">Embed and Analyze</button>
+          <button id="clearButton" class="secondary" type="button">Clear</button>
+          <p id="status" role="status">Choose a cover image and watermark image.</p>
+        </aside>
+
+        <section class="results" aria-label="Results">
+          <div class="gallery">
+            <figure>
+              <canvas id="coverCanvas"></canvas>
+              <figcaption>Cover Image</figcaption>
+            </figure>
+            <figure>
+              <canvas id="watermarkCanvas"></canvas>
+              <figcaption>Watermark Resized to Capacity</figcaption>
+            </figure>
+            <figure>
+              <canvas id="binaryCanvas"></canvas>
+              <figcaption>Binary Watermark Bits</figcaption>
+            </figure>
+            <figure>
+              <canvas id="watermarkedCanvas"></canvas>
+              <figcaption>Watermarked Image</figcaption>
+            </figure>
+            <figure>
+              <canvas id="extractedCanvas"></canvas>
+              <figcaption>Extracted Watermark</figcaption>
+            </figure>
+          </div>
+
+          <div class="downloads">
+            <a id="downloadWatermarked" aria-disabled="true">Download Watermarked</a>
+            <a id="downloadExtracted" aria-disabled="true">Download Extracted</a>
+            <a id="downloadBits" aria-disabled="true">Download Bits</a>
+          </div>
+        </section>
+      </section>
+
+      <section class="stats-section">
+        <h2>Statistics</h2>
+        <div class="stats" id="statsGrid"></div>
+      </section>
+
+      <section class="subbands-section">
+        <h2>Visualize Subbands</h2>
+        <div class="subbands" id="subbandsGrid"></div>
+      </section>
+
+      <section class="notes">
+        <h2>Notebook Notes</h2>
+        <ul>
+          <li>Higher alpha usually strengthens extraction but can reduce visual quality.</li>
+          <li>Higher DWT levels create smaller watermark capacity because the HL band is smaller.</li>
+          <li>The watermark is resized to the available bit capacity automatically.</li>
+          <li>The displayed watermarked image is cropped back to the uploaded cover size.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
