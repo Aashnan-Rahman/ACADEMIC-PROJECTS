@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "club": {
+    "name": "Gaffer FC",
+    "currency": "USD",
+    "budget": 250000
+  },
+  "users": [
+    { "id": "u-admin", "username": "admin", "password": "admin123", "role": "admin", "name": "Club Admin" },
+    { "id": "u-manager", "username": "manager", "password": "manager123", "role": "manager", "name": "Alex Morgan", "staffId": "s-manager" },
+    { "id": "u-physio", "username": "physio", "password": "physio123", "role": "physio", "name": "Dr. Sam Lee", "staffId": "s-physio" },
+    { "id": "u-owner", "username": "owner", "password": "owner123", "role": "owner", "name": "Jordan Blake" },
+    { "id": "u-player", "username": "10", "password": "player123", "role": "player", "name": "Syem Aziz", "playerId": "p-10" }
+  ],
+  "players": [
+    { "id": "p-10", "number": 10, "name": "Syem Aziz", "dob": "2000-11-09", "height": 170, "weight": 70, "position": "Forward", "salary": 24000, "fitness": "fit", "selected": true, "stats": { "matches": 23, "goals": 17, "assists": 9, "yellow": 2, "red": 0, "rating": 8.1 } },
+    { "id": "p-01", "number": 1, "name": "Moudud Hasan", "dob": "2000-10-14", "height": 182, "weight": 78, "position": "Goalkeeper", "salary": 21000, "fitness": "fit", "selected": true, "stats": { "matches": 18, "goals": 0, "assists": 1, "yellow": 1, "red": 0, "rating": 7.4 } },
+    { "id": "p-07", "number": 7, "name": "Aashnan Rahman", "dob": "1999-09-25", "height": 173, "weight": 68, "position": "Midfielder", "salary": 22500, "fitness": "fit", "selected": true, "stats": { "matches": 21, "goals": 7, "assists": 12, "yellow": 3, "red": 0, "rating": 7.8 } },
+    { "id": "p-04", "number": 4, "name": "Nabil Khan", "dob": "2001-02-18", "height": 185, "weight": 80, "position": "Defender", "salary": 19500, "fitness": "injured", "selected": false, "stats": { "matches": 16, "goals": 2, "assists": 3, "yellow": 4, "red": 1, "rating": 7.0 } },
+    { "id": "p-11", "number": 11, "name": "Rafi Ahmed", "dob": "2002-07-03", "height": 176, "weight": 72, "position": "Forward", "salary": 18000, "fitness": "fit", "selected": false, "stats": { "matches": 12, "goals": 6, "assists": 4, "yellow": 1, "red": 0, "rating": 7.2 } }
+  ],
+  "staff": [
+    { "id": "s-manager", "name": "Alex Morgan", "role": "manager", "speciality": "Tactics", "experience": 9, "salary": 42000 },
+    { "id": "s-physio", "name": "Dr. Sam Lee", "role": "physio", "speciality": "Sports medicine", "experience": 7, "salary": 36000 }
+  ],
+  "matches": [
+    { "id": "m-1", "opponent": "Impulse FC", "date": "2026-09-06", "time": "18:30", "venue": "Home", "status": "scheduled", "scored": null, "conceded": null },
+    { "id": "m-2", "opponent": "NSU FC", "date": "2026-09-14", "time": "16:00", "venue": "Away", "status": "scheduled", "scored": null, "conceded": null },
+    { "id": "m-3", "opponent": "BRAC FC", "date": "2026-08-20", "time": "17:00", "venue": "Home", "status": "played", "scored": 3, "conceded": 1 }
+  ],
+  "transactions": [
+    { "id": "t-1", "date": "2026-08-01", "type": "income", "category": "Sponsorship", "description": "Season sponsor", "amount": 75000 },
+    { "id": "t-2", "date": "2026-08-05", "type": "expense", "category": "Equipment", "description": "Training equipment", "amount": 8200 },
+    { "id": "t-3", "date": "2026-08-10", "type": "income", "category": "Tickets", "description": "Home match tickets", "amount": 12600 }
+  ]
+}

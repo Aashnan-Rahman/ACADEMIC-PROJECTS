@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Update Match Info</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous"><link rel="stylesheet" href="/Users/sanz/Documents/Code/Project/create_player.css">
+  <script src="/Users/sanz/Documents/Code/Project/create_player.js"></script>
+  </head>
+<body>
+
+ <div class="topnav">
+  <a class="active" href="#home">Home</a>
+  <a href="#news">Infomation</a>
+  <a href="#contact">Contact</a>
+  <div class="topnav-right">
+    <a href="#search">Search</a>
+    <a href="/Users/sanz/Documents/Code/Project/login.html">Logout</a>
+  </div>
+</div>
+
+<section class="width-800px">
+  <div class="container">
+  	<img src="/Users/sanz/Documents/Code/Project/goalpost.png" alt="indoor_football" class="image" width="800">
+    <br>
+    
+</div>
+<br>
+
+</section>
+  <div class="center">Update Match Information</div>
+  <br>
+  <br>   
+
+
+<div class="player">
+  <form action="connect.php" method="post">
+               <div class="form-group">
+                <label for="id">Match ID</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="id"
+                  name="id"
+                />
+              </div>
+<br>
+<form action="connect.php" method="post">
+  <label for="match">Opponent:</label>
+  <select id="match" name="match">
+    <option value="aba">AbaHoney</option>
+    <option value="real">Real Madrid</option>
+    <option value="boka">Boka Juniors FC</option>
+    <option value="kala">KolarBagan</option>
+    <option value="bar">Barcelona</option>
+    <option value="psg">PSG</option>
+    <option value="Moha">Mohamadan</option>
+    <option value="Sevilla">Sevilla/option>
+    <option value="saif">Saif Sporting</option>
+    <option value="Board">Board Bazar FC</option>
+    <option value="bb">BoroBari FC</option>
+    <option value="khan">Khan Villa FC</option>
+    <option value="kol">KalaMeshWar FC</option>
+    <option value="south">South Hall FC</option>
+    <option value="north">North Hall FC</option>
+
+  </select>
+<br>
+<br>
+</form>
+
+              <div class="form-group">
+                <label for="goalc">Goals Conceded</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="goalc"
+                  name="goalc"
+                />
+              </div>
+
+               <div class="form-group">
+                <label for="goal_score">Goals Scored</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="goal_score"
+                  name="goal_score"
+                />
+              </div>
+
+               <div class="form-group">
+                <label for="rcard">Red Cards</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="rcard"
+                  name="rcard"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="ycard">Yellow Cards</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="ycard"
+                  name="ycard"
+                />
+              </div>
+             
+<div class="form-group">
+                <label for="result">Result</label>
+                <div>
+                  <label for="Win" class="radio-inline"
+                    ><input
+                      type="radio"
+                      name="result"
+                      value="Win"
+                      id="Win"
+                    />Win</label
+                  >
+                  <label for="Lose" class="radio-inline"
+                    ><input
+                      type="radio"
+                      name="result"
+                      value="Lose"
+                      id="Lose"
+                    />Lose</label>
+                </div>
+              </div>
+
+              <input type="submit" class="btn btn-primary" />
+            </form>
+
+ <center><div class="toast-header">
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="window.location.href = '/Users/sanz/Documents/Code/Project/create_user.html';">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div></center>
+
+</body>
+</html>
+</body>
+</html>

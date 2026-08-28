@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Create User</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous"><link rel="stylesheet" href="./create_player.css">
+  <script src="/Users/sanz/Documents/Code/Project/create_owner.js"></script>
+  </head>
+<body>
+
+ <div class="topnav">
+  <a class="active" href="./what.html">Home</a>
+  <a href="#news">Infomation</a>
+  <a href="#contact">Contact</a>
+  <div class="topnav-right">
+    <a href="#search">Search</a>
+    <a href="./logout_process.php">Logout</a>
+  </div>
+</div>
+
+<section class="width-800px">
+  <div class="container">
+  	<img src="./goalpost.png" alt="indoor_football" class="image" width="800">
+    <br>
+    
+</div>
+<br>
+
+</section>
+  <div class="center">New Owner Information</div>
+  <br>
+  <br>   
+<br>
+<br>
+
+<div class="player">
+  <form action="create_owner.php" method="post">
+    <div class="form-group">
+                <label for="ownerid">Owner ID</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="ownerid"
+                  name="ownerid"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="name">Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  name="name"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="amount">Share Amount</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="amount"
+                  name="amount"
+                />
+              </div>
+
+               <div class="form-group">
+                <label for="total">Total Amount</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="total"
+                  name="total"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="dob">Date of Birth</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="dob"
+                  name="dob"
+                />
+              </div>
+              <div class="form-group">
+                <label for="gender">Gender</label>
+                <div>
+                  <label for="male" class="radio-inline"
+                    ><input
+                      type="radio"
+                      name="gender"
+                      value="m"
+                      id="male"
+                    />Male</label
+                  >
+                  <label for="female" class="radio-inline"
+                    ><input
+                      type="radio"
+                      name="gender"
+                      value="f"
+                      id="female"
+                    />Female</label>
+                </div>
+              </div>
+                
+<input type="submit" class="btn btn-primary" />
+            </form>
+
+ <center><div class="toast-header">
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close" onclick="window.location.href = '/Users/sanz/Documents/Code/Project/create_user.html';">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div></center>
+
+</body>
+</html>
+</body>
+</html>

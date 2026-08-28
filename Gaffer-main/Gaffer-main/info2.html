@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head><script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+<py-env>
+  - pandas
+</py-env>
+
+<!-- Write your Python code! -->
+
+    </head>
+    <body>
+<py-script>
+import pandas as pd 
+from pyodide.http import open_url
+df = pd.read_csv("team_stat.csv")
+df.head(10)
+</py-script>
+    </body>
+</html>

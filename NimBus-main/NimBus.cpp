@@ -1,870 +1,459 @@
-//version 0.3.6
-/*
-*changelog*
-minor changes
+// NimBus 1.0 - interactive, portable C++ console edition
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-*/
+namespace {
 
-#include <bits/stdc++.h>
-#define pb push_back
+const char* SCORE_FILE = "nimbus_scores.tsv";
 
-using namespace std;
+struct Move {
+    std::size_t pile;
+    int amount;
+    Move(std::size_t p = 0, int a = 0) : pile(p), amount(a) {}
+};
 
-vector<int>init_stacks(int n)
-{
-    vector<int>stacks;
-    srand(time(NULL));
-    stacks.push_back(0);
-    for(int i=0; i<n; i++)
-    {
+struct ScoreRecord {
+    std::string date, mode, player1, player2;
+    int score1, score2;
+    std::string winner;
+};
 
-        int x=rand()%10;
-        if(x<5)
-            x+=5;
-        stacks.push_back(x);
+std::mt19937 rng(static_cast<unsigned int>(std::time(NULL)));
+std::map<std::vector<int>, int> nimBusMemo;
+
+std::string trim(const std::string& value) {
+    std::size_t first = value.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return "";
+    std::size_t last = value.find_last_not_of(" \t\r\n");
+    return value.substr(first, last - first + 1);
+}
+
+std::string readLine(const std::string& prompt) {
+    std::cout << prompt;
+    std::string line;
+    if (!std::getline(std::cin, line)) {
+        std::cout << "\nInput closed. Goodbye!\n";
+        std::exit(0);
     }
-    return stacks;
-}
-int toss()
-{
-    srand(time(NULL));
-    int ret=rand()%2;
-    return ret+1;
+    return trim(line);
 }
 
-void delay(int n)
-{
-    for(int i=0; i<n*100000000; i++);
+bool parseInt(const std::string& text, int& value) {
+    std::istringstream input(text);
+    char extra;
+    return (input >> value) && !(input >> extra);
 }
 
-void addToLeaderboard(string ss,int type)
-{
-    char s[ss.length()+1];
-    memset(s,0,sizeof s);
-    for(int i=0; i<ss.length(); i++)
-        s[i]=ss[i];
-    FILE *myOpenLeaderFile;
-    if(type==1)
-        myOpenLeaderFile=fopen("leaderboard_regularNimBus.txt", "a");
-    else if(type==2)
-        myOpenLeaderFile=fopen("leaderboard_Nim.txt", "a");
-    else if(type==3)
-        myOpenLeaderFile=fopen("leaderboard_AINimBus.txt", "a");
-    else
-        myOpenLeaderFile=fopen("leaderboard_specialNimBus.txt", "a");
-    fprintf(myOpenLeaderFile,"%s\n",s);
-    fclose(myOpenLeaderFile);
+int readInt(const std::string& prompt, int minimum, int maximum) {
+    for (;;) {
+        int value = 0;
+        std::string text = readLine(prompt);
+        if (parseInt(text, value) && value >= minimum && value <= maximum) return value;
+        std::cout << "Please enter a whole number from " << minimum << " to " << maximum << ".\n";
+    }
 }
 
-void addToScoreboard(string player1_name,string player2_name,int score1,int score2,int type)
-{
-    int n1=player1_name.length(),n2=player2_name.length();
-    char s1[n1+1],s2[n2+1];
-    memset(s1,0, sizeof s1);
-    memset(s2,0,sizeof s2);
-    for(int i=0; i<n1; i++)
-        s1[i]=player1_name[i];
-    for(int i=0; i<n2; i++)
-        s2[i]=player2_name[i];
-    FILE *scoreboardFile = fopen("scoreboard.txt", "a");
-    if(type==1)
-        fprintf(scoreboardFile, "NimBus       ");
-    else if(type==2)
-        fprintf(scoreboardFile, "Nim           ");
-    else if(type==3)
-        fprintf(scoreboardFile, "AI NimBus     ");
-    else if(type==4)
-        fprintf(scoreboardFile, "Special NimBus  ");
-    fprintf(scoreboardFile, "%s %s   %s VS %s    %d : %d   ",__DATE__,__TIME__,s1,s2,score1,score2);
-    if(score1>score2)
-        fprintf(scoreboardFile, "%s\n",s1);
-    else
-        fprintf(scoreboardFile, "%s\n",s2);
-    fclose(scoreboardFile);
-    if(score1>score2)
-        addToLeaderboard(player1_name,type);
-    else
-        addToLeaderboard(player2_name,type);
-/// output format: GAME MODE  DATE TIME Player1 VS Player2 Score Winner
+std::string readName(const std::string& prompt, const std::string& fallback) {
+    std::string name = readLine(prompt);
+    return name.empty() ? fallback : name;
 }
 
+void waitForEnter() { readLine("\nPress Enter to continue..."); }
 
-void NIM_bus()///Regular NIM-bus
-{
-    cout<<"Regular NIM-bus starting.\n\n";
-    srand(time(NULL));
-    int total_stack=rand()%10;
-    if(total_stack<5)
-        total_stack+=5;
-    if(total_stack%2==0)
-        total_stack++;
-    getchar();
-    string player1_name,player2_name;
-    cout<<"Enter name of Player1: ";
-    getline(cin,player1_name);
-    cout<<endl;
-    cout<<"Enter name of Player2: ";
-    getline(cin,player2_name);
-    cout<<endl;
-    int turn=0,player=0,nonempty_stack=total_stack,score[10]= {0};
-    vector<int>stacks=init_stacks(total_stack);
-    player=toss();
-    if(player==1)
-        cout<<player1_name;
-    else
-        cout<<player2_name;
-    cout<<" goes first.\n";
-    printf("There are %d stacks in total.\n\n",total_stack);
-    cout<<"Prepare for the match!\n";
-    system("PAUSE");
+void divider() {
+    std::cout << "\n============================================================\n";
+}
 
-    while(nonempty_stack)
-    {
-        system("CLS");
-        cout<<"Current score: "<<score[1]<<"  :  "<<score[2]<<endl<<endl;
-        cout<<"Stack Number:  ";for(int i=1;i<=total_stack;i++)cout<<i<<"  ";cout<<endl;
-        cout<<"Stack State :  ";
-        for(int i=1; i<=total_stack; i++)
-            printf("%d  ",stacks[i]);
-        cout<<endl<<endl;
-        int chosen_stack,chosen_disk;
-        if(player==1)
-            cout<<player1_name;
-        else
-            cout<<player2_name;
-        cout<<", which stack do you choose: ";
-        cin>>chosen_stack;
-        if(chosen_stack>total_stack||chosen_stack<1|| stacks[chosen_stack]==0)
-        {
-            if(stacks[chosen_stack]==0)
-                cout<<"Error! Stack is empty. ";
-            else
-                cout<<"Error! Invalid stack number given. ";
-            cout<<"Please retry.\n";
-            delay(7);
-            continue;
+std::vector<int> normalized(std::vector<int> piles) {
+    piles.erase(std::remove(piles.begin(), piles.end(), 0), piles.end());
+    std::sort(piles.begin(), piles.end());
+    return piles;
+}
+
+bool finished(const std::vector<int>& piles) {
+    for (std::size_t i = 0; i < piles.size(); ++i)
+        if (piles[i] > 0) return false;
+    return true;
+}
+
+int remainingObjects(const std::vector<int>& piles) {
+    int total = 0;
+    for (std::size_t i = 0; i < piles.size(); ++i) total += piles[i];
+    return total;
+}
+
+std::vector<int> createPiles(int count) {
+    std::uniform_int_distribution<int> size(5, 9);
+    std::vector<int> piles(static_cast<std::size_t>(count));
+    for (int i = 0; i < count; ++i) piles[static_cast<std::size_t>(i)] = size(rng);
+    return piles;
+}
+
+void showBoard(const std::vector<int>& piles) {
+    divider();
+    std::cout << "                         N I M B U S\n"
+              << "------------------------------------------------------------\n";
+    for (std::size_t i = 0; i < piles.size(); ++i) {
+        std::cout << "Pile " << std::setw(2) << (i + 1) << "  ";
+        if (piles[i] == 0) std::cout << "(cleared)";
+        else std::cout << std::string(static_cast<std::size_t>(piles[i]), 'O') << "  [" << piles[i] << "]";
+        std::cout << '\n';
+    }
+    std::cout << "------------------------------------------------------------\n"
+              << "Objects remaining: " << remainingObjects(piles) << "\n";
+}
+
+std::size_t choosePile(const std::vector<int>& piles, const std::string& player) {
+    for (;;) {
+        int choice = readInt(player + ", choose a pile: ", 1, static_cast<int>(piles.size()));
+        if (piles[static_cast<std::size_t>(choice - 1)] > 0) return static_cast<std::size_t>(choice - 1);
+        std::cout << "That pile has already been cleared. Choose another one.\n";
+    }
+}
+
+Move humanMove(const std::vector<int>& piles, const std::string& player,
+               bool specialAvailable, bool& usedSpecial) {
+    std::size_t pile = choosePile(piles, player);
+    int normalLimit = std::min(2, piles[pile]);
+    usedSpecial = false;
+    if (specialAvailable && piles[pile] > normalLimit) {
+        std::string answer = readLine("Use your one-time power move on this pile? (y/N): ");
+        if (!answer.empty() && std::tolower(static_cast<unsigned char>(answer[0])) == 'y') {
+            usedSpecial = true;
+            return Move(pile, readInt("How many objects will you remove? ", 1, piles[pile]));
         }
-        cout<<"How many disk do you want to remove(1 or 2): ";
-        cin>>chosen_disk;
-        if(stacks[chosen_stack]<chosen_disk|| chosen_disk>2|| chosen_disk<1)
-        {
-            if(stacks[chosen_stack]<chosen_disk)
-                cout<<"Error! You can not remove more disk than the stack contains. ";
-            else
-                cout<<"Error! Invalid disk number. ";
-            cout<<"Please retry.\n";
-            delay(7);
-            continue;
-        }
-        delay(5);
-        //system("CLS");
-        stacks[chosen_stack]-=chosen_disk;
-        if(stacks[chosen_stack]==0)
-            score[player]++,nonempty_stack--;
-        if(nonempty_stack==0)
-            break;
-        player=player==1?2:1;
-
-
     }
-    cout<<"\nCongratulations! \n\n";
-    cout<<(score[1]>score[2]?player1_name:player2_name );
-    cout<<" You have won the game.\n\n";
-    printf("Final score: ");
-    cout<<player1_name<<"( "<<score[1]<<" )   ";
-    cout<<player2_name<<"( "<<score[2]<<" )\n\n";
-    int p1sc=score[1];
-    int p2sc=score[2];
-    addToScoreboard(player1_name,player2_name,p1sc,p2sc,1);
-    system("PAUSE");
-    system("CLS");
+    return Move(pile, readInt("Remove how many objects (1 or 2)? ", 1, normalLimit));
 }
 
-void NIM()///Regular NIM
-{
-    srand(time(NULL));
-    int total_stack=rand()%10;
-    if(total_stack<5)
-        total_stack+=5;
-    if(total_stack%2==0)
-        total_stack++;
-    getchar();
-    string player1_name,player2_name;
-    cout<<"Enter name of Player1: ";
-    getline(cin,player1_name);
-    cout<<"Enter name of Player2: ";
-    getline(cin,player2_name);
-    cout<<endl;
-    int turn=0,player=0,nonempty_stack=total_stack;
-    vector<int>stacks=init_stacks(total_stack);
-    player=toss();
-    if(player==1)
-        cout<<player1_name;
-    else
-        cout<<player2_name;
-    cout<<" goes first.\n";
-    printf("There are %d stacks in total.\n\n",total_stack);
+// Exact scoring-play solver. Its value is the best final point difference
+// available to the player whose turn it is. A cleared pile scores immediately;
+// the recursive value is subtracted because the opponent moves next.
+int solveNimBus(const std::vector<int>& rawState) {
+    std::vector<int> state = normalized(rawState);
+    if (state.empty()) return 0;
+    std::map<std::vector<int>, int>::const_iterator cached = nimBusMemo.find(state);
+    if (cached != nimBusMemo.end()) return cached->second;
 
-    cout<<"Prepare for the match!\n";
-    system("PAUSE");
-    while(nonempty_stack)
-    {
-        cout<<"\n\n";
-        system("CLS");
-        cout<<"Stack Number:  ";for(int i=1;i<=total_stack;i++)cout<<i<<"  ";cout<<endl;
-        cout<<"Stack State :  ";
-        for(int i=1; i<=total_stack; i++)
-            printf("%d  ",stacks[i]);
-        cout<<endl<<endl;
-        int chosen_stack,chosen_disk;
-        if(player==1)
-            cout<<player1_name;
-        else
-            cout<<player2_name;
-        cout<<", which stack do you choose: ";
-        cin>>chosen_stack;
-        if(chosen_stack>total_stack||chosen_stack<1|| stacks[chosen_stack]==0)
-        {
-            if(stacks[chosen_stack]==0)
-                cout<<"Error! Stack is empty. ";
-            else
-                cout<<"Error! Invalid stack number given. ";
-            cout<<"Please retry.\n";
-            delay(7);
-            continue;
+    int best = std::numeric_limits<int>::min();
+    for (std::size_t pile = 0; pile < state.size(); ++pile) {
+        for (int amount = 1; amount <= 2 && amount <= state[pile]; ++amount) {
+            std::vector<int> next = state;
+            next[pile] -= amount;
+            int point = next[pile] == 0 ? 1 : 0;
+            best = std::max(best, point - solveNimBus(next));
         }
-        cout<<"How many disk do you want to remove: ";
-        cin>>chosen_disk;
-        if(stacks[chosen_stack]<chosen_disk|| chosen_disk<1)
-        {
-            cout<<"Error! Invalid disk number. ";
-            cout<<"Please retry.\n";
-            delay(7);
-            continue;
-        }
-        delay(5);
-        //system("CLS");
-        stacks[chosen_stack]-=chosen_disk;
-        if(stacks[chosen_stack]==0)
-            nonempty_stack--;
-        if(nonempty_stack==0)
-            break;
-        player=player==1?2:1;
     }
-    cout<<"\nCongratulations! ";
-    cout<<(player==1?player1_name:player2_name );
-    cout<<" You have won the game.\n\n";
-    int p[10]= {0};
-    if(player==1)
-        p[1]=1;
-    else
-        p[2]=1;
-    addToScoreboard(player1_name,player2_name,p[1],p[2],2);
-    system("PAUSE");
-    system("CLS");
+    nimBusMemo[state] = best;
+    return best;
 }
 
-
-pair<int,int> AI_turn(vector<int>stacks)///computer's turn
-{
-    int i,sz=stacks.size();
-    for(i=1; i<sz; i++)
-    {
-        if(stacks[i]<3&& stacks[i]>0)
-            return make_pair(i,stacks[i]);
-    }
-    for(i=1; i<sz; i++)
-    {
-        if(stacks[i]>3)
-            return make_pair(i,min(2,stacks[i]-3));
-    }
-    for(i=1; i<sz; i++)
-    {
-        if(stacks[i]>0)
-            return make_pair(i,1);
-    }
-}
-void VS_AI()///against computer
-{
-    cout<<"Lets Play!\n";
-    srand(time(NULL));
-    int total_stack=rand()%10;
-    if(total_stack<5)
-        total_stack+=5;
-    if(total_stack%2==0)
-        total_stack++;
-    getchar();
-    string player_name;
-    cout<<"Enter your name: ";
-    getline(cin,player_name);
-    cout<<endl;
-    int turn=0,player=0,nonempty_stack=total_stack,score[10]= {0};
-    vector<int>stacks=init_stacks(total_stack);
-    player=toss();
-    if(player==1)
-        cout<<"You go first.\n";
-    else
-        cout<<"Computer goes first.\n";
-    printf("There are %d stacks in total.\n\n",total_stack);
-
-    cout<<"Prepare for the match!\n";
-    system("PAUSE");
-    while(nonempty_stack)
-    {
-        cout<<"\n\n";
-        system("CLS");
-        cout<<"Current score: "<<score[1]<<"  :  "<<score[2]<<endl<<endl;
-        cout<<"Stack Number:  ";for(int i=1;i<=total_stack;i++)cout<<i<<"  ";cout<<endl;
-        cout<<"Stack State :  ";
-        for(int i=1; i<=total_stack; i++)
-            printf("%d  ",stacks[i]);
-        cout<<endl<<endl;
-        int chosen_stack,chosen_disk;
-
-        if(player==1)
-        {
-            cout<<"Your turn. Which stack do you choose: ";
-            cin>>chosen_stack;
-            if(chosen_stack>total_stack||chosen_stack<1|| stacks[chosen_stack]==0)
-            {
-                if(stacks[chosen_stack]==0)
-                    cout<<"Error! Stack is empty. ";
-                else
-                    cout<<"Error! Invalid stack number given. ";
-                cout<<"Please retry.\n";
-                delay(7);
-                continue;
-            }
-            cout<<"How many disk do you want to remove(1 or 2): ";
-            cin>>chosen_disk;
-            if(stacks[chosen_stack]<chosen_disk|| chosen_disk>2|| chosen_disk<1)
-            {
-                if(stacks[chosen_stack]<chosen_disk)
-                    cout<<"Error! You can not remove more disk than the stack contains. ";
-                else
-                    cout<<"Error! Invalid disk number. ";
-                cout<<"Please retry.\n";
-                delay(7);
-                continue;
+Move bestNimBusMove(const std::vector<int>& piles) {
+    Move bestMove;
+    int bestValue = std::numeric_limits<int>::min();
+    bool found = false;
+    for (std::size_t pile = 0; pile < piles.size(); ++pile) {
+        for (int amount = 1; amount <= 2 && amount <= piles[pile]; ++amount) {
+            std::vector<int> next = piles;
+            next[pile] -= amount;
+            int point = next[pile] == 0 ? 1 : 0;
+            int value = point - solveNimBus(next);
+            if (!found || value > bestValue) {
+                found = true;
+                bestValue = value;
+                bestMove = Move(pile, amount);
             }
         }
-        else
-        {
-            cout<<"My turn. ";
-            pair<int,int>my_turn=AI_turn(stacks);
-            printf("I chose to remove %d disk from stack %d.\n",my_turn.second,my_turn.first);
-            chosen_stack=my_turn.first;
-            chosen_disk=my_turn.second;
-            //delay(7);
-            system("PAUSE");
-
-        }
-        delay(5);
-        stacks[chosen_stack]-=chosen_disk;
-        if(stacks[chosen_stack]==0)
-            score[player]++,nonempty_stack--;
-        if(nonempty_stack==0)
-            break;
-        player=player==1?2:1;
-        delay(3);
     }
-    printf("\nFinal score: ");
-    cout<<"You ( "<<score[1]<<" )   ";
-    cout<<"Me ( "<<score[2]<<" )\n";
-    if(score[1]>score[2])
-        cout<<"GG,you were lucky! I went easy on you this time!\n\nFun fact: Did you know, Humans made Computer!\n";
-    else
-        {
-            system("Color C0");
-            cout<<"HeHe! I'm invincible! :D Why do you even bother trying?\n\n";}
-    addToScoreboard(player_name,"AI",score[1],score[2],3);
-    system("PAUSE");
-    system("Color 0B");
-    system("CLS");
+    if (!found) throw std::logic_error("AI was asked to move on a finished board");
+    return bestMove;
 }
 
-void special_NIM_bus()
-{
-    cout<<"Starting Special NimBus\n";
-    srand(time(NULL));
-    int total_stack=rand()%10;
-    if(total_stack<5)
-        total_stack+=5;
-    if(total_stack%2==0)
-        total_stack++;
-    getchar();
-    cout<<"Remember, you have 1 special turn. Use it wisely!\n\n";
-    string player1_name,player2_name;
-    cout<<"Enter name of Player1: ";
-    getline(cin,player1_name);
-    cout<<"Enter name of Player2: ";
-    getline(cin,player2_name);
-    cout<<endl;
-    int turn=0,player=0,nonempty_stack=total_stack,score[10]= {0};
-    int flag[11];
-    flag[1]=flag[2]=1;
-    vector<int>stacks=init_stacks(total_stack);
-    player=toss();
-    if(player==1)
-        cout<<player1_name;
-    else
-        cout<<player2_name;
-    cout<<" goes first.\n";
-    printf("There are %d stacks in total.\n\n",total_stack);
-
-    cout<<"Prepare for the match!\n";
-    system("PAUSE");
-    while(nonempty_stack)
-    {
-        cout<<"\n\n";
-        system("CLS");
-        cout<<"Current score: "<<score[1]<<"  :  "<<score[2]<<endl<<endl;
-        cout<<"Stack Number:  ";for(int i=1;i<=total_stack;i++)cout<<i<<"  ";cout<<endl;
-        cout<<"Stack State :  ";
-        for(int i=1; i<=total_stack; i++)
-            printf("%d  ",stacks[i]);
-        cout<<endl<<endl;
-        int chosen_stack,chosen_disk;
-        if(player==1)
-            cout<<player1_name;
-        else
-            cout<<player2_name;
-        cout<<", which stack do you choose: ";
-        cin>>chosen_stack;
-        if(chosen_stack>total_stack||chosen_stack<1|| stacks[chosen_stack]==0)
-        {
-            if(stacks[chosen_stack]==0)
-                cout<<"Error! Stack is empty. ";
-            else
-                cout<<"Error! Invalid stack number given. ";
-            cout<<"Please retry.\n";
-            delay(7);
-            continue;
+Move bestTraditionalNimMove(const std::vector<int>& piles) {
+    int nimSum = 0;
+    for (std::size_t i = 0; i < piles.size(); ++i) nimSum ^= piles[i];
+    if (nimSum != 0) {
+        for (std::size_t pile = 0; pile < piles.size(); ++pile) {
+            int target = piles[pile] ^ nimSum;
+            if (target < piles[pile]) return Move(pile, piles[pile] - target);
         }
-        cout<<"How many disk do you want to remove: ";
-        cin>>chosen_disk;
-        if(stacks[chosen_stack]<chosen_disk|| chosen_disk>2|| chosen_disk<1)
-        {
-            if(stacks[chosen_stack]<chosen_disk)
-                cout<<"Error! You can not remove more disk than the stack contains. Please retry.\n";
-            else
-            {
-                if(flag[player]==1)
-                {
-                    flag[player]=0;
-                    stacks[chosen_stack]-=chosen_disk;
-                    if(stacks[chosen_stack]==0)
-                        score[player]++,nonempty_stack--;
-                    if(nonempty_stack==0)
-                        break;
-                    player=player==1?2:1;
-                }
-                else
-                    cout<<"Error! Invalid disk number.You have only one special move. Please retry.\n";
-            }
-            delay(7);
-            continue;
-        }
-        delay(5);
-        stacks[chosen_stack]-=chosen_disk;
-        if(stacks[chosen_stack]==0)
-            score[player]++,nonempty_stack--;
-        if(nonempty_stack==0)
-            break;
-        player=player==1?2:1;
     }
-    cout<<"\nCongratulations! \n\n";
-    cout<<(score[1]>score[2]?player1_name:player2_name );
-    cout<<" You have won the game.\n";
-    printf("Final score: ");
-    cout<<player1_name<<"( "<<score[1]<<" )   ";
-    cout<<player2_name<<"( "<<score[2]<<" )\n\n";
-    int p1sc=score[1];
-    int p2sc=score[2];
-    addToScoreboard(player1_name,player2_name,p1sc,p2sc,4);
-    system("PAUSE");
-    system("CLS");
+    for (std::size_t pile = 0; pile < piles.size(); ++pile)
+        if (piles[pile] > 0) return Move(pile, 1);
+    throw std::logic_error("AI was asked to move on a finished board");
 }
 
-
-void SCOREBOARD()
-{
-    system("CLS");
-    cout<<"Game Log\n";
-    cout<<"\nGAME MODE	DATE	    TIME       PLAYER1 vs PLAYER2   SCORE   WINNER\n\n";
-    FILE *myFile;
-    FILE *myOpenFile;
-    char c;
-    if((myOpenFile = fopen("scoreboard.txt", "r")) == NULL)
-    {
-        cout<<"No game records found.\n";
-        FILE *myFile = fopen("scoreboard.txt", "w");
-        fclose(myFile);
-    }
-    while((c=fgetc(myOpenFile))!=EOF)
-        putchar(c);
-    fclose(myOpenFile);
-    cout<<endl;
-    system("PAUSE");
-    system("CLS");
-    //GAME MODE    DATE        TIME       PLAYER1 vs PLAYER2   SCORE   WINNER
+std::string nowText() {
+    std::time_t now = std::time(NULL);
+    std::tm* local = std::localtime(&now);
+    std::ostringstream output;
+    output << std::put_time(local, "%Y-%m-%d %H:%M");
+    return output.str();
 }
 
-void print_leaderboard(vector<string>VS)
-{
-    int i,n;
-    VS.pop_back();
-    n=VS.size();
-    map<string,int>freq;
-    vector<pair<int,string> >output;
-    vector<string>names;
-    n=VS.size();
-    for(i=0;i<n;i++)
-    {
-        if(freq[VS[i] ]==0)names.pb(VS[i]);
-        freq[VS[i]]++;
-    }
-    n=names.size();
-    for(i=0;i<n;i++)
-    {
-        output.pb({freq[names[i]],names[i]});
-    }
-    sort(output.begin(),output.end());
-    reverse(output.begin(),output.end());
-    n=min(5,(int)output.size());
-    cout<<"RANK WINS PLAYER\n";
-    for(i=0;i<n;i++)
-    {
-        cout<<"  "<<i+1<<"   "<<output[i].first<<"   "<<output[i].second<<endl;
-    }
-    cout<<endl;
-    names.clear();
-    freq.clear();
-    output.clear();
-    system("PAUSE");
+std::string safeField(std::string value) {
+    std::replace(value.begin(), value.end(), '\t', ' ');
+    std::replace(value.begin(), value.end(), '\n', ' ');
+    std::replace(value.begin(), value.end(), '\r', ' ');
+    return value;
 }
 
-void LEADERBOARD()
-{
-    delay(3);
-    FILE *myFile;
-    FILE *myOpenFile;
-    FILE *addLeader;
-    char c,cc,s[101];
-    vector<string>VS;
-    string S;
-    upp:;
-    system("CLS");
-    cout<<"Enter game mode to find leaderboard:\n";
-    cout<<"\t1.Regular NIM-Bus\n\t2.Regular NIM\n\t3.AI NIM-Bus\n\t4.Special NIM-bus\n";
-    cout<<"\t5.Return to main menu\n";
-
-    cout<<"\nEnter your choice: ";
-    int choice;
-    cin>>choice;
-    delay(5);
-    system("CLS");
-    if(choice==1)
-    {
-        if((myOpenFile = fopen("leaderboard_regularNimBus.txt", "r")) == NULL)
-        {
-            cout<<"No game records found.\n";
-            FILE *myFile = fopen("leaderboard_regularNimBus.txt", "w");
-            fprintf(myFile,"\n");
-            fclose(myFile);
-        }
-        addLeader=fopen("leaderboard_regularNimBus.txt","r");
-        while((cc=fgetc(addLeader))!=EOF)
-        {
-            fscanf(addLeader,"%s",&s);
-            S.clear();
-            for(int i=0; i<strlen(s); i++)
-                S.pb(s[i]);
-            VS.pb(S);
-        }
-        fclose(addLeader);
-        cout<<"Here is top 5 players of Regular NIM-bus:\n\n";
-        print_leaderboard(VS);
-    }
-    else if(choice ==2)
-    {
-        if((myOpenFile = fopen("leaderboard_Nim.txt", "r")) == NULL)
-        {
-            cout<<"No game records found.\n";
-            FILE *myFile = fopen("leaderboard_Nim.txt", "w");
-            fprintf(myFile,"\n");
-            fclose(myFile);
-        }
-        addLeader=fopen("leaderboard_Nim.txt","r");
-        while((cc=fgetc(addLeader))!=EOF)
-        {
-            fscanf(addLeader,"%s",&s);
-            S.clear();
-            for(int i=0; i<strlen(s); i++)
-                S.pb(s[i]);
-            VS.pb(S);
-        }
-        fclose(addLeader);
-        cout<<"Here is top 5 players of Traditional NIM:\n\n";
-        print_leaderboard(VS);
-    }
-    else if(choice==3)
-    {
-        if((myOpenFile = fopen("leaderboard_AINimBus.txt", "r")) == NULL)
-        {
-            cout<<"No game records found.\n";
-            FILE *myFile = fopen("leaderboard_AINimBus.txt", "w");
-            fprintf(myFile,"\n");
-            fclose(myFile);
-        }
-        addLeader=fopen("leaderboard_AINimBus.txt","r");
-        while((cc=fgetc(addLeader))!=EOF)
-        {
-            fscanf(addLeader,"%s",&s);
-            S.clear();
-            for(int i=0; i<strlen(s); i++)
-                S.pb(s[i]);
-            VS.pb(S);
-        }
-        fclose(addLeader);
-        cout<<"Here is top 5 players of AI NIM-bus:\n\n";
-        print_leaderboard(VS);
-    }
-    else if(choice==4)
-    {
-        if((myOpenFile = fopen("leaderboard_specialNimBus.txt", "r")) == NULL)
-        {
-            cout<<"No game records found.\n";
-            FILE *myFile = fopen("leaderboard_specialNimBus.txt", "w");
-            fprintf(myFile,"\n");
-            fclose(myFile);
-        }
-        addLeader=fopen("leaderboard_specialNimBus.txt","r");
-        while((cc=fgetc(addLeader))!=EOF)
-        {
-            fscanf(addLeader,"%s",&s);
-            S.clear();
-            for(int i=0; i<strlen(s); i++)
-                S.pb(s[i]);
-            VS.pb(S);
-        }
-        fclose(addLeader);
-        cout<<"Here is top 5 players of Special NIM-bus:\n\n";
-        print_leaderboard(VS);
-    }
-    else if(choice==5)
+void saveScore(const std::string& mode, const std::string& player1,
+               const std::string& player2, int score1, int score2,
+               const std::string& winner) {
+    std::ofstream output(SCORE_FILE, std::ios::app);
+    if (!output) {
+        std::cout << "Warning: the score history could not be saved.\n";
         return;
-    else
-    {
-        cout<<"Error in your input.\n\n";
-        delay(5);
-        goto upp;
     }
-    VS.clear();
-    system("CLS");
-    goto upp;
+    output << nowText() << '\t' << safeField(mode) << '\t'
+           << safeField(player1) << '\t' << safeField(player2) << '\t'
+           << score1 << '\t' << score2 << '\t' << safeField(winner) << '\n';
 }
 
-void HELP()
-{
-    //cout<<"Under construction. :) \n";
-    FILE *helpFile;
-    char cx;
-    fast:;
-    cout<<"HELP SECTION\n\n1.Introduction to NIM \n2.HOW TO PLAY Traditional NIM \n3.HOW TO PLAY NIM-BUS \n4.HOW TO PLAY NIM-BUS vs COMPUTER \n5.HOW TO PLAY SPECIAL NIMBUS\n";
-    cout<<"6.Return to main menu\n";
-    int x;
-    cout<<"\nChoose an option: ";
-    cin>>x;
-    delay(2);
-    system("CLS");
-    char s[1001];
-    if(x==1)
-    {
-        helpFile=fopen("NIM_INTRO.txt","r");
-        while((cx=fgetc(helpFile))!=EOF)
-        putchar(cx);
-        fclose(helpFile);
+std::vector<ScoreRecord> loadScores() {
+    std::ifstream input(SCORE_FILE);
+    std::vector<ScoreRecord> records;
+    std::string line;
+    while (std::getline(input, line)) {
+        std::istringstream row(line);
+        ScoreRecord record;
+        std::string score1, score2;
+        if (std::getline(row, record.date, '\t') && std::getline(row, record.mode, '\t') &&
+            std::getline(row, record.player1, '\t') && std::getline(row, record.player2, '\t') &&
+            std::getline(row, score1, '\t') && std::getline(row, score2, '\t') &&
+            std::getline(row, record.winner) && parseInt(score1, record.score1) &&
+            parseInt(score2, record.score2)) records.push_back(record);
     }
-    else if(x==2)
-    {
-        helpFile=fopen("REGULAR_NIM.txt","r");
-        while((cx=fgetc(helpFile))!=EOF)
-        putchar(cx);
-        fclose(helpFile);
-    }
-    else if(x==3)
-    {
-        helpFile=fopen("2P_NIMBUS.txt","r");
-        while((cx=fgetc(helpFile))!=EOF){
-        fgets(s,1000,helpFile);
-        puts(s);
-        }
-        fclose(helpFile);
-    }
-    else if(x==4)
-    {
-        helpFile=fopen("NIMBUS_AI.txt","r");
-        while((cx=fgetc(helpFile))!=EOF)
-        putchar(cx);
-        fclose(helpFile);
-    }
-    else if(x==5)
-    {
-        helpFile=fopen("SPECIAL_NIMBUS.txt","r");
-        while((cx=fgetc(helpFile))!=EOF)
-        putchar(cx);
-        fclose(helpFile);
-    }
-    /*else if(x==6)
-    {
-        helpFile=fopen("MULTI_NIMBUS.txt","r");
-        while((cx=fgetc(helpFile))!=EOF)
-        putchar(cx);
-        fclose(helpFile);
-    }*/
-    else if(x==6)goto last;
-    else cout<<"ERROR";
-
-    cout<<"\n";
-    system("PAUSE");
-    system("CLS");
-    goto fast;
-    last:;
+    return records;
 }
 
-void CREDITS()
-{
-    system("CLS");
-    cout<<"Project NIM-bus\n\n";
-    cout<<"Rahman Aashnan 190041204\n";
-    cout<<"Aziz Syem      190041238\n";
-    cout<<"Hasan Moudud   190041240\n\n\n";
-    system("PAUSE");
-    system("CLS");
+int choosePileCount() {
+    std::cout << "\nChoose the number of piles:\n"
+              << "  1. 3 piles (quick)\n  2. 5 piles (standard)\n"
+              << "  3. 7 piles (long)\n  4. 9 piles (marathon)\n";
+    const int options[] = {3, 5, 7, 9};
+    return options[readInt("Choice: ", 1, 4) - 1];
 }
 
-int main()
-{
-    system("Color B0");
-    int choice;
-    cout<<"Welcome to NIM-bus\n\n";
-    system("PAUSE");
+void playNimBus(bool versusAI, bool specialMode) {
+    divider();
+    std::cout << (specialMode ? "SPECIAL NIMBUS" : versusAI ? "NIMBUS VS COMPUTER" : "TWO-PLAYER NIMBUS") << "\n"
+              << "Clear a pile to score. Remove 1 or 2 objects per turn.\n";
+    if (specialMode) std::cout << "Each player also has one power move that may remove any amount.\n";
 
-begining:
-    ;
-    system("CLS");
-    system("Color 0B");
+    std::string names[2];
+    names[0] = readName("Player 1 name: ", "Player 1");
+    names[1] = versusAI ? "Nimbus AI" : readName("Player 2 name: ", "Player 2");
+    std::vector<int> piles = createPiles(choosePileCount());
+    int scores[2] = {0, 0};
+    bool powerAvailable[2] = {specialMode, specialMode};
+    std::uniform_int_distribution<int> coin(0, 1);
+    int player = coin(rng);
+    std::cout << "\n" << names[player] << " won the toss and moves first.\n";
+    waitForEnter();
 
-    cout<<"Select what you want to do:\n\n";
-    cout<<"1.Start a new game.\n";
-    cout<<"2.Visit Leaderboard.\n";
-    cout<<"3.Help section.\n";
-    cout<<"4.Credits.\n";
-    cout<<"5.Quit.\n\n";
-    cout<<"Enter your choice: ";
-    cin>>choice;
-    cout<<"\n";
-    delay(2);
-    system("CLS");
-
-    if(choice==1)
-    {
-        cout<<"Game Mode: \n";
-        cout<<"\t1.NIM-bus.\n";
-        cout<<"\t2.NIM.\n";
-        cout<<"\t3.Return to main menu.\n";
-        cout<<"\nEnter your choice: ";
-        cin>>choice;
-        cout<<endl;
-        delay(2);
-        system("CLS");
-        if(choice==1)
-        {
-            cout<<"NIM-bus:\n\t1.Regular(2 player).\n\t2.VS Computer.\n\t3.Special.";
-            cout<<"\n\t4.Return to main menu.\n";
-            cout<<"\nEnter your choice: ";
-            cin>>choice;
-            cout<<endl;
-            delay(2);
-            system("CLS");
-            if(choice==1)
-                NIM_bus();
-            else if(choice==2)
-                VS_AI();
-            else if(choice==3)
-            {
-                special_NIM_bus();
-            }
-            else if(choice==4)goto begining;
-            else
-            {
-                cout<<"Error in your input.\n\n";
-                delay(5);
-                system("CLS");
-                goto begining;
-            }
+    while (!finished(piles)) {
+        showBoard(piles);
+        std::cout << "Score: " << names[0] << " " << scores[0] << " - " << scores[1] << " " << names[1] << "\n\n";
+        Move move;
+        bool usedSpecial = false;
+        if (versusAI && player == 1) {
+            move = bestNimBusMove(piles);
+            std::cout << "Nimbus AI removes " << move.amount << " from pile " << (move.pile + 1) << ".\n";
+        } else {
+            move = humanMove(piles, names[player], powerAvailable[player], usedSpecial);
+            if (usedSpecial) powerAvailable[player] = false;
         }
-        else if(choice==2)
-        {
-            NIM();
+        piles[move.pile] -= move.amount;
+        if (piles[move.pile] == 0) {
+            ++scores[player];
+            std::cout << names[player] << " cleared pile " << (move.pile + 1) << " and scored!\n";
         }
-        else if(choice==3)goto begining;
-        else
-        {
-            cout<<"Error in your input.\n\n";
-            delay(5);
-            system("CLS");
-            goto begining;
+        if (!finished(piles)) player = 1 - player;
+    }
+
+    showBoard(piles);
+    std::cout << "Final score: " << names[0] << " " << scores[0] << " - " << scores[1] << " " << names[1] << "\n";
+    std::string winner = scores[0] > scores[1] ? names[0] : names[1];
+    std::cout << "Winner: " << winner << "!\n";
+    saveScore(specialMode ? "Special NimBus" : versusAI ? "AI NimBus" : "NimBus",
+              names[0], names[1], scores[0], scores[1], winner);
+    waitForEnter();
+}
+
+void playTraditionalNim(bool versusAI) {
+    divider();
+    std::cout << (versusAI ? "TRADITIONAL NIM VS COMPUTER" : "TWO-PLAYER TRADITIONAL NIM") << "\n"
+              << "Remove any positive number from one pile. Clearing the final object wins.\n";
+    std::string names[2];
+    names[0] = readName("Player 1 name: ", "Player 1");
+    names[1] = versusAI ? "Nim AI" : readName("Player 2 name: ", "Player 2");
+    std::vector<int> piles = createPiles(choosePileCount());
+    std::uniform_int_distribution<int> coin(0, 1);
+    int player = coin(rng);
+    std::cout << "\n" << names[player] << " won the toss and moves first.\n";
+    waitForEnter();
+
+    while (!finished(piles)) {
+        showBoard(piles);
+        Move move;
+        if (versusAI && player == 1) {
+            move = bestTraditionalNimMove(piles);
+            std::cout << "Nim AI removes " << move.amount << " from pile " << (move.pile + 1) << ".\n";
+        } else {
+            std::size_t pile = choosePile(piles, names[player]);
+            move = Move(pile, readInt("How many objects will you remove? ", 1, piles[pile]));
+        }
+        piles[move.pile] -= move.amount;
+        if (finished(piles)) break;
+        player = 1 - player;
+    }
+
+    showBoard(piles);
+    std::cout << names[player] << " took the final object and won!\n";
+    saveScore(versusAI ? "AI Nim" : "Nim", names[0], names[1],
+              player == 0 ? 1 : 0, player == 1 ? 1 : 0, names[player]);
+    waitForEnter();
+}
+
+void showScores() {
+    divider();
+    std::cout << "SCORE HISTORY\n\n";
+    std::vector<ScoreRecord> records = loadScores();
+    if (records.empty()) {
+        std::cout << "No completed games yet.\n";
+        waitForEnter();
+        return;
+    }
+    std::size_t first = records.size() > 15 ? records.size() - 15 : 0;
+    for (std::size_t i = first; i < records.size(); ++i) {
+        const ScoreRecord& item = records[i];
+        std::cout << item.date << " | " << item.mode << " | " << item.player1 << " "
+                  << item.score1 << " - " << item.score2 << " " << item.player2
+                  << " | Winner: " << item.winner << '\n';
+    }
+
+    std::map<std::string, int> wins;
+    for (std::size_t i = 0; i < records.size(); ++i) ++wins[records[i].winner];
+    std::vector<std::pair<int, std::string> > ranking;
+    for (std::map<std::string, int>::const_iterator it = wins.begin(); it != wins.end(); ++it)
+        ranking.push_back(std::make_pair(it->second, it->first));
+    std::sort(ranking.begin(), ranking.end(), std::greater<std::pair<int, std::string> >());
+    std::cout << "\nLEADERBOARD\n";
+    std::size_t limit = std::min<std::size_t>(5, ranking.size());
+    for (std::size_t i = 0; i < limit; ++i)
+        std::cout << "  " << (i + 1) << ". " << ranking[i].second << " - " << ranking[i].first << " win(s)\n";
+    waitForEnter();
+}
+
+void showRules() {
+    divider();
+    std::cout << "HOW TO PLAY\n\n"
+              << "NimBus\n  Players alternate removing 1 or 2 objects from one pile.\n"
+              << "  Clearing a pile earns one point. An odd pile count prevents ties.\n\n"
+              << "Special NimBus\n  Each player may once remove any positive number from a pile.\n\n"
+              << "Traditional Nim\n  Remove any positive number from one pile. Taking the final object wins.\n\n"
+              << "Computer strategy\n  Nimbus AI solves the complete scoring state. Nim AI uses the XOR strategy.\n";
+    waitForEnter();
+}
+
+void playMenu() {
+    for (;;) {
+        divider();
+        std::cout << "CHOOSE A GAME\n\n"
+                  << "  1. NimBus vs computer\n  2. Two-player NimBus\n"
+                  << "  3. Traditional Nim vs computer\n  4. Two-player Traditional Nim\n"
+                  << "  5. Special two-player NimBus\n  0. Back\n\n";
+        int choice = readInt("Choice: ", 0, 5);
+        if (choice == 0) return;
+        if (choice == 1) playNimBus(true, false);
+        else if (choice == 2) playNimBus(false, false);
+        else if (choice == 3) playTraditionalNim(true);
+        else if (choice == 4) playTraditionalNim(false);
+        else playNimBus(false, true);
+    }
+}
+
+int evaluateMove(const std::vector<int>& piles, const Move& move) {
+    std::vector<int> next = piles;
+    next[move.pile] -= move.amount;
+    return (next[move.pile] == 0 ? 1 : 0) - solveNimBus(next);
+}
+
+bool runSelfTests() {
+    if (solveNimBus(std::vector<int>()) != 0) return false;
+    if (solveNimBus(std::vector<int>(1, 1)) != 1) return false;
+    if (solveNimBus(std::vector<int>(1, 2)) != 1) return false;
+    if (solveNimBus(std::vector<int>(1, 3)) != -1) return false;
+
+    std::vector<int> marathon(9, 9);
+    Move marathonMove = bestNimBusMove(marathon);
+    if (marathonMove.pile >= marathon.size() || marathonMove.amount < 1 || marathonMove.amount > 2) return false;
+
+    for (int a = 0; a <= 5; ++a) for (int b = 0; b <= 5; ++b)
+    for (int c = 0; c <= 5; ++c) for (int d = 0; d <= 5; ++d) {
+        std::vector<int> state;
+        state.push_back(a); state.push_back(b); state.push_back(c); state.push_back(d);
+        if (finished(state)) continue;
+        Move move = bestNimBusMove(state);
+        if (move.pile >= state.size() || move.amount < 1 || move.amount > 2 || move.amount > state[move.pile]) return false;
+        if (evaluateMove(state, move) != solveNimBus(state)) return false;
+    }
+
+    std::vector<int> traditional;
+    traditional.push_back(3); traditional.push_back(4); traditional.push_back(5);
+    Move nimMove = bestTraditionalNimMove(traditional);
+    traditional[nimMove.pile] -= nimMove.amount;
+    int nimSum = 0;
+    for (std::size_t i = 0; i < traditional.size(); ++i) nimSum ^= traditional[i];
+    return nimSum == 0;
+}
+
+} // namespace
+
+int main(int argc, char* argv[]) {
+    if (argc > 1 && std::string(argv[1]) == "--self-test") {
+        bool passed = runSelfTests();
+        std::cout << (passed ? "All NimBus self-tests passed.\n" : "NimBus self-tests failed.\n");
+        return passed ? 0 : 1;
+    }
+
+    std::cout << "\n  _   _ _           ____             \n"
+              << " | \\ | (_)_ __ ___ | __ ) _   _ ___ \n"
+              << " |  \\| | | '_ ` _ \\|  _ \\| | | / __|\n"
+              << " | |\\  | | | | | | | |_) | |_| \\__ \\\n"
+              << " |_| \\_|_|_| |_| |_|____/ \\__,_|___/\n";
+
+    for (;;) {
+        divider();
+        std::cout << "MAIN MENU\n\n"
+                  << "  1. Play\n  2. Score history and leaderboard\n"
+                  << "  3. How to play\n  4. Credits\n  0. Quit\n\n";
+        int choice = readInt("Choice: ", 0, 4);
+        if (choice == 0) break;
+        if (choice == 1) playMenu();
+        else if (choice == 2) showScores();
+        else if (choice == 3) showRules();
+        else {
+            divider();
+            std::cout << "NimBus\n\nOriginal project: Rahman Aashnan, Aziz Syem, Hasan Moudud\n"
+                      << "Interactive edition with corrected optimal AI.\n";
+            waitForEnter();
         }
     }
-    else if(choice==2)
-    {
-        cout<<"\t1.Game log.\n";
-        cout<<"\t2.Leaderboard.\n";
-        cout<<"\t3.Return to main menu.\n";
-        cout<<"\nEnter your choice: ";
-        cin>>choice;
-        if(choice==1)
-            SCOREBOARD();
-        else if(choice==2)
-        {
-            LEADERBOARD();
-            system("CLS");
-        }
-        else if(choice==3)goto begining;
-        else
-        {
-            cout<<"Error in your input.\n\n";
-            delay(5);
-            system("CLS");
-            goto begining;
-        }
-    }
-    else if(choice==3)
-        HELP();
-    else if(choice==4)
-        CREDITS();
-    else if(choice==5)
-        goto last;
-    else
-    {
-        cout<<"Error in your input.Do you wish to continue?(Y/N): ";
-        char choice1[10];
-        scanf("%s",choice1);
-        cout<<"\n";
-        delay(4);
-        system("CLS");
-
-        if(choice1[0]=='y'|| choice1[0]=='Y')
-            goto begining;
-last:
-        ;
-        cout<<"Thanks for your time. See you later. Turning NIM-bus OFF.\n";
-        system("PAUSE");
-        return 0;
-    }
-    goto begining;
-    system("PAUSE");
+    std::cout << "\nThanks for playing NimBus!\n";
     return 0;
 }
