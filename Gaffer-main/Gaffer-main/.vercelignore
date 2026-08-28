@@ -1,0 +1,13 @@
+/*
+!api
+!api/**
+!data
+!data/**
+!index.html
+!gaffer.css
+!gaffer.js
+!local-db.js
+!indoor.jpg
+!package.json
+!package-lock.json
+!readme.md

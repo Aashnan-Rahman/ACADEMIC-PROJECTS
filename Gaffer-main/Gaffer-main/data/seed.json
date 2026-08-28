@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "club": {
     "name": "Gaffer FC",
     "currency": "USD",
@@ -13,11 +13,25 @@
     { "id": "u-player", "username": "10", "password": "player123", "role": "player", "name": "Syem Aziz", "playerId": "p-10" }
   ],
   "players": [
-    { "id": "p-10", "number": 10, "name": "Syem Aziz", "dob": "2000-11-09", "height": 170, "weight": 70, "position": "Forward", "salary": 24000, "fitness": "fit", "selected": true, "stats": { "matches": 23, "goals": 17, "assists": 9, "yellow": 2, "red": 0, "rating": 8.1 } },
     { "id": "p-01", "number": 1, "name": "Moudud Hasan", "dob": "2000-10-14", "height": 182, "weight": 78, "position": "Goalkeeper", "salary": 21000, "fitness": "fit", "selected": true, "stats": { "matches": 18, "goals": 0, "assists": 1, "yellow": 1, "red": 0, "rating": 7.4 } },
-    { "id": "p-07", "number": 7, "name": "Aashnan Rahman", "dob": "1999-09-25", "height": 173, "weight": 68, "position": "Midfielder", "salary": 22500, "fitness": "fit", "selected": true, "stats": { "matches": 21, "goals": 7, "assists": 12, "yellow": 3, "red": 0, "rating": 7.8 } },
+    { "id": "p-13", "number": 13, "name": "Farhan Kabir", "dob": "2001-05-21", "height": 188, "weight": 82, "position": "Goalkeeper", "salary": 17000, "fitness": "fit", "selected": true, "stats": { "matches": 9, "goals": 0, "assists": 0, "yellow": 0, "red": 0, "rating": 7.1 } },
+    { "id": "p-02", "number": 2, "name": "Tariq Hossain", "dob": "2000-03-12", "height": 178, "weight": 74, "position": "Defender", "salary": 18500, "fitness": "fit", "selected": true, "stats": { "matches": 19, "goals": 1, "assists": 5, "yellow": 3, "red": 0, "rating": 7.3 } },
+    { "id": "p-03", "number": 3, "name": "Imran Chowdhury", "dob": "1999-08-07", "height": 186, "weight": 81, "position": "Defender", "salary": 21500, "fitness": "fit", "selected": true, "stats": { "matches": 22, "goals": 3, "assists": 2, "yellow": 4, "red": 0, "rating": 7.7 } },
     { "id": "p-04", "number": 4, "name": "Nabil Khan", "dob": "2001-02-18", "height": 185, "weight": 80, "position": "Defender", "salary": 19500, "fitness": "injured", "selected": false, "stats": { "matches": 16, "goals": 2, "assists": 3, "yellow": 4, "red": 1, "rating": 7.0 } },
-    { "id": "p-11", "number": 11, "name": "Rafi Ahmed", "dob": "2002-07-03", "height": 176, "weight": 72, "position": "Forward", "salary": 18000, "fitness": "fit", "selected": false, "stats": { "matches": 12, "goals": 6, "assists": 4, "yellow": 1, "red": 0, "rating": 7.2 } }
+    { "id": "p-05", "number": 5, "name": "Adnan Karim", "dob": "2000-12-30", "height": 183, "weight": 79, "position": "Defender", "salary": 20500, "fitness": "fit", "selected": true, "stats": { "matches": 20, "goals": 2, "assists": 1, "yellow": 2, "red": 0, "rating": 7.5 } },
+    { "id": "p-06", "number": 6, "name": "Samiul Islam", "dob": "2002-01-16", "height": 175, "weight": 71, "position": "Defender", "salary": 17500, "fitness": "fit", "selected": true, "stats": { "matches": 14, "goals": 1, "assists": 6, "yellow": 2, "red": 0, "rating": 7.2 } },
+    { "id": "p-15", "number": 15, "name": "Hasib Rahman", "dob": "2001-09-09", "height": 180, "weight": 76, "position": "Defender", "salary": 16800, "fitness": "fit", "selected": true, "stats": { "matches": 11, "goals": 1, "assists": 3, "yellow": 1, "red": 0, "rating": 6.9 } },
+    { "id": "p-21", "number": 21, "name": "Mehedi Hasan", "dob": "2003-06-14", "height": 182, "weight": 77, "position": "Defender", "salary": 15200, "fitness": "fit", "selected": true, "stats": { "matches": 7, "goals": 0, "assists": 2, "yellow": 1, "red": 0, "rating": 6.7 } },
+    { "id": "p-07", "number": 7, "name": "Aashnan Rahman", "dob": "1999-09-25", "height": 173, "weight": 68, "position": "Midfielder", "salary": 22500, "fitness": "fit", "selected": true, "stats": { "matches": 21, "goals": 7, "assists": 12, "yellow": 3, "red": 0, "rating": 7.8 } },
+    { "id": "p-08", "number": 8, "name": "Rayhan Ahmed", "dob": "2000-06-11", "height": 176, "weight": 72, "position": "Midfielder", "salary": 21000, "fitness": "fit", "selected": true, "stats": { "matches": 20, "goals": 5, "assists": 10, "yellow": 2, "red": 0, "rating": 7.6 } },
+    { "id": "p-14", "number": 14, "name": "Fahim Noor", "dob": "2002-04-19", "height": 174, "weight": 69, "position": "Midfielder", "salary": 18000, "fitness": "fit", "selected": true, "stats": { "matches": 13, "goals": 4, "assists": 7, "yellow": 1, "red": 0, "rating": 7.3 } },
+    { "id": "p-16", "number": 16, "name": "Zubair Ali", "dob": "2001-11-02", "height": 179, "weight": 73, "position": "Midfielder", "salary": 17200, "fitness": "fit", "selected": true, "stats": { "matches": 10, "goals": 2, "assists": 6, "yellow": 2, "red": 0, "rating": 7.0 } },
+    { "id": "p-20", "number": 20, "name": "Arif Mahmud", "dob": "2003-02-27", "height": 171, "weight": 66, "position": "Midfielder", "salary": 15500, "fitness": "fit", "selected": true, "stats": { "matches": 8, "goals": 3, "assists": 4, "yellow": 0, "red": 0, "rating": 6.8 } },
+    { "id": "p-09", "number": 9, "name": "Nayeem Sarker", "dob": "2000-01-23", "height": 184, "weight": 79, "position": "Forward", "salary": 23000, "fitness": "fit", "selected": true, "stats": { "matches": 21, "goals": 14, "assists": 5, "yellow": 2, "red": 0, "rating": 7.9 } },
+    { "id": "p-10", "number": 10, "name": "Syem Aziz", "dob": "2000-11-09", "height": 170, "weight": 70, "position": "Forward", "salary": 24000, "fitness": "fit", "selected": true, "stats": { "matches": 23, "goals": 17, "assists": 9, "yellow": 2, "red": 0, "rating": 8.1 } },
+    { "id": "p-11", "number": 11, "name": "Rafi Ahmed", "dob": "2002-07-03", "height": 176, "weight": 72, "position": "Forward", "salary": 18000, "fitness": "fit", "selected": true, "stats": { "matches": 12, "goals": 6, "assists": 4, "yellow": 1, "red": 0, "rating": 7.2 } },
+    { "id": "p-17", "number": 17, "name": "Sabbir Miah", "dob": "2001-07-28", "height": 177, "weight": 73, "position": "Forward", "salary": 17600, "fitness": "fit", "selected": true, "stats": { "matches": 12, "goals": 7, "assists": 3, "yellow": 1, "red": 0, "rating": 7.1 } },
+    { "id": "p-18", "number": 18, "name": "Omar Faruk", "dob": "2002-10-05", "height": 181, "weight": 75, "position": "Forward", "salary": 16400, "fitness": "fit", "selected": true, "stats": { "matches": 9, "goals": 5, "assists": 2, "yellow": 0, "red": 0, "rating": 6.9 } }
   ],
   "staff": [
     { "id": "s-manager", "name": "Alex Morgan", "role": "manager", "speciality": "Tactics", "experience": 9, "salary": 42000 },
@@ -32,5 +46,13 @@
     { "id": "t-1", "date": "2026-08-01", "type": "income", "category": "Sponsorship", "description": "Season sponsor", "amount": 75000 },
     { "id": "t-2", "date": "2026-08-05", "type": "expense", "category": "Equipment", "description": "Training equipment", "amount": 8200 },
     { "id": "t-3", "date": "2026-08-10", "type": "income", "category": "Tickets", "description": "Home match tickets", "amount": 12600 }
-  ]
+  ],
+  "lineup": {
+    "squadSize": 18,
+    "formation": "4-3-3",
+    "starters": {
+      "gk": "p-01", "lb": "p-06", "cb1": "p-03", "cb2": "p-05", "rb": "p-02",
+      "cm1": "p-08", "cm2": "p-14", "am": "p-07", "lw": "p-11", "st": "p-09", "rw": "p-10"
+    }
+  }
 }

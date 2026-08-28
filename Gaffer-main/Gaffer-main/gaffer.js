@@ -5,6 +5,30 @@
   const toast = document.querySelector("#toast");
   const db = window.GafferDB;
   let currentUser = null;
+  let activeLineupSlot = null;
+
+  const formations = {
+    "4-3-3": [
+      ["gk","GK","Goalkeeper",50,91], ["lb","LB","Defender",15,72], ["cb1","CB","Defender",38,78], ["cb2","CB","Defender",62,78], ["rb","RB","Defender",85,72],
+      ["cm1","CM","Midfielder",28,50], ["cm2","CM","Midfielder",72,50], ["am","AM","Midfielder",50,39],
+      ["lw","LW","Forward",16,17], ["st","ST","Forward",50,11], ["rw","RW","Forward",84,17]
+    ],
+    "4-4-2": [
+      ["gk","GK","Goalkeeper",50,91], ["lb","LB","Defender",15,72], ["cb1","CB","Defender",38,78], ["cb2","CB","Defender",62,78], ["rb","RB","Defender",85,72],
+      ["lm","LM","Midfielder",15,43], ["cm1","CM","Midfielder",38,52], ["cm2","CM","Midfielder",62,52], ["rm","RM","Midfielder",85,43],
+      ["st1","ST","Forward",38,15], ["st2","ST","Forward",62,15]
+    ],
+    "3-5-2": [
+      ["gk","GK","Goalkeeper",50,91], ["cb1","CB","Defender",25,75], ["cb2","CB","Defender",50,80], ["cb3","CB","Defender",75,75],
+      ["lwb","LWB","Midfielder",10,47], ["cm1","CM","Midfielder",33,50], ["dm","DM","Midfielder",50,62], ["cm2","CM","Midfielder",67,50], ["rwb","RWB","Midfielder",90,47],
+      ["st1","ST","Forward",38,15], ["st2","ST","Forward",62,15]
+    ],
+    "4-2-3-1": [
+      ["gk","GK","Goalkeeper",50,91], ["lb","LB","Defender",15,72], ["cb1","CB","Defender",38,78], ["cb2","CB","Defender",62,78], ["rb","RB","Defender",85,72],
+      ["dm1","DM","Midfielder",36,58], ["dm2","DM","Midfielder",64,58], ["lw","LW","Midfielder",17,35], ["am","AM","Midfielder",50,38], ["rw","RW","Midfielder",83,35],
+      ["st","ST","Forward",50,12]
+    ]
+  };
 
   const routesByRole = {
     admin: ["dashboard", "players", "staff", "matches", "finance", "data"],
@@ -16,7 +40,7 @@
 
   const navLabels = {
     dashboard: "Overview", players: "Players", staff: "Staff", squad: "Squad",
-    fitness: "Fitness", matches: "Matches", finance: "Finance", data: "Local data"
+    fitness: "Fitness", matches: "Matches", finance: "Finance", data: "Club data"
   };
 
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
@@ -50,7 +74,7 @@
           <div class="login-card">
             <p class="eyebrow">Welcome back</p>
             <h2>Sign in to Gaffer</h2>
-            <p class="subtle">Your changes stay in this browser on this device.</p>
+            <p class="subtle">Sign in to your club workspace.</p>
             <form id="login-form">
               <div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" required></div>
               <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
@@ -202,6 +226,82 @@
       </table></div></article>`;
   }
 
+  function squadBuilderView() {
+    if (currentUser.role !== "manager") return forbidden();
+    const data = db.get();
+    const lineup = data.lineup || { squadSize: 18, formation: "4-3-3", starters: {} };
+    const slots = formations[lineup.formation] || formations["4-3-3"];
+    if (!slots.some(([key]) => key === activeLineupSlot)) activeLineupSlot = null;
+    const assignedIds = new Set(Object.values(lineup.starters || {}).filter(Boolean));
+    const selected = data.players.filter((player) => player.selected);
+    const bench = selected.filter((player) => !assignedIds.has(player.id));
+    const reserves = data.players.filter((player) => player.fitness === "fit" && !player.selected);
+    const injured = data.players.filter((player) => player.fitness !== "fit");
+    const activeDefinition = slots.find(([key]) => key === activeLineupSlot);
+    const eligible = activeDefinition ? selected.filter((player) => player.position === activeDefinition[2] && (!assignedIds.has(player.id) || lineup.starters[activeLineupSlot] === player.id)) : [];
+    const filled = slots.filter(([key]) => lineup.starters[key]).length;
+    const sizeOptions = Array.from({ length: 13 }, (_, index) => index + 11).map((size) => `<option value="${size}" ${lineup.squadSize === size ? "selected" : ""}>${size} players</option>`).join("");
+
+    return `${heading("Matchday planning", "Squad builder", `<button class="btn secondary" data-action="clear-lineup">Clear</button><button class="btn" data-action="auto-pick">Auto-pick squad</button>`)}
+      <section class="lineup-summary cards">
+        <article class="card metric"><span>Formation</span><strong>${esc(lineup.formation)}</strong></article>
+        <article class="card metric"><span>Matchday squad</span><strong>${selected.length}/${lineup.squadSize}</strong></article>
+        <article class="card metric"><span>Starting XI</span><strong>${filled}/11</strong></article>
+        <article class="card metric"><span>Bench</span><strong>${bench.length}/${Math.max(0, lineup.squadSize - 11)}</strong></article>
+      </section>
+      <article class="card lineup-controls"><form data-form="lineup-settings" class="lineup-settings">
+        <div class="field"><label>Formation</label><select name="formation">${Object.keys(formations).map((formation) => `<option value="${formation}" ${lineup.formation === formation ? "selected" : ""}>${formation}</option>`).join("")}</select></div>
+        <div class="field"><label>Squad size</label><select name="squadSize">${sizeOptions}</select></div>
+        <button class="btn" type="submit">Apply setup</button>
+        <p class="subtle">Changing formation clears the starting positions, but keeps the selected matchday squad.</p>
+      </form></article>
+      <section class="squad-workspace">
+        <div class="football-pitch" aria-label="${esc(lineup.formation)} formation">
+          <div class="pitch-line halfway"></div><div class="pitch-circle"></div><div class="penalty-box top"></div><div class="penalty-box bottom"></div>
+          ${slots.map(([key,label,type,x,y]) => {
+            const player = data.players.find((item) => item.id === lineup.starters[key]);
+            return `<button class="position-slot ${player ? "filled" : ""} ${activeLineupSlot === key ? "active" : ""}" style="left:${x}%;top:${y}%" data-action="choose-slot" data-slot="${key}" title="Choose ${label}">
+              <span>${label}</span><strong>${player ? `#${player.number} ${esc(player.name)}` : "Pick player"}</strong><small>${type}</small>
+            </button>`;
+          }).join("")}
+        </div>
+        <aside class="card assignment-panel">
+          ${activeDefinition ? `<div><p class="eyebrow">Assign position</p><h2>${activeDefinition[1]} · ${activeDefinition[2]}</h2>
+            ${lineup.starters[activeLineupSlot] ? `<button class="btn danger small" data-action="unassign-slot" data-slot="${activeLineupSlot}">Move current player to bench</button>` : ""}
+            <div class="assignment-list">${eligible.length ? eligible.map((player) => `<button class="player-pick ${lineup.starters[activeLineupSlot] === player.id ? "current" : ""}" data-action="assign-player" data-slot="${activeLineupSlot}" data-id="${player.id}"><span class="shirt-number">${player.number}</span><span><strong>${esc(player.name)}</strong><small>${player.position} · ${player.stats.rating} rating</small></span></button>`).join("") : `<p class="empty">No selected ${activeDefinition[2].toLowerCase()} is available. Add one to the squad below.</p>`}</div>
+          </div>` : `<div class="assignment-help"><span>↖</span><h2>Pick a position</h2><p>Select a slot on the pitch, then choose a compatible player from the matchday squad.</p></div>`}
+        </aside>
+      </section>
+      <section class="squad-lists grid-2">
+        <article class="card"><h2>Bench · ${bench.length}</h2><div class="player-chip-list">${bench.length ? bench.map((player) => playerChip(player, "remove-squad")).join("") : `<p class="empty">Assigned starters and substitutes will appear here.</p>`}</div></article>
+        <article class="card"><h2>Available first team · ${reserves.length}</h2><div class="player-chip-list">${reserves.length ? reserves.map((player) => playerChip(player, "add-squad")).join("") : `<p class="empty">Every fit player is already selected.</p>`}</div></article>
+      </section>
+      ${injured.length ? `<article class="card injured-list"><h2>Unavailable</h2><div class="player-chip-list">${injured.map((player) => `<div class="player-chip disabled"><span class="shirt-number">${player.number}</span><span><strong>${esc(player.name)}</strong><small>${player.position} · injured</small></span></div>`).join("")}</div></article>` : ""}`;
+  }
+
+  function playerChip(player, action) {
+    return `<div class="player-chip"><span class="shirt-number">${player.number}</span><span><strong>${esc(player.name)}</strong><small>${player.position} · ${player.stats.rating} rating</small></span><button class="btn ${action === "remove-squad" ? "danger" : "secondary"} small" data-action="${action}" data-id="${player.id}">${action === "remove-squad" ? "Remove" : "Add"}</button></div>`;
+  }
+
+  function autoPickSquad() {
+    db.update((data) => {
+      const lineup = data.lineup;
+      const slots = formations[lineup.formation];
+      const fitPlayers = data.players.filter((player) => player.fitness === "fit").sort((a, b) => b.stats.rating - a.stats.rating);
+      const used = new Set();
+      lineup.starters = {};
+      slots.forEach(([key,,type]) => {
+        const player = fitPlayers.find((candidate) => candidate.position === type && !used.has(candidate.id));
+        if (player) { lineup.starters[key] = player.id; used.add(player.id); }
+      });
+      const benchCount = Math.max(0, lineup.squadSize - used.size);
+      fitPlayers.filter((player) => !used.has(player.id)).slice(0, benchCount).forEach((player) => used.add(player.id));
+      data.players.forEach((player) => { player.selected = used.has(player.id); });
+    });
+    activeLineupSlot = null;
+    navigate("squad", "Best available squad selected.");
+  }
+
   function playerFormView() {
     if (currentUser.role !== "admin") return forbidden();
     return `${heading("Team administration", "Add player", `<a class="btn secondary" href="#players">Cancel</a>`)}
@@ -315,8 +415,10 @@
   function dataView() {
     if (currentUser.role !== "admin") return forbidden();
     const data = db.get();
-    return `${heading("Browser storage", "Local data")}
+    const cloud = db.cloudStatus();
+    return `${heading("Storage and backup", "Club data")}
       <section class="grid-2">
+        <article class="card"><h2>Vercel Blob sync</h2><p class="subtle">Club operations are saved to the connected Blob store when deployed. Login credentials remain in this browser.</p><div class="fixture"><span>Status</span><span class="badge ${cloud === "online" ? "fit" : cloud === "syncing" ? "scheduled" : ""}">${esc(cloud)}</span></div><button class="btn" data-action="sync-cloud">Sync now</button></article>
         <article class="card"><h2>Backup and restore</h2><p class="subtle">Download all current club data as JSON, or restore a previous Gaffer backup.</p><div class="actions"><button class="btn" data-action="export">Export JSON</button><label class="btn secondary" for="import-file">Import JSON</label><input id="import-file" type="file" accept="application/json,.json" hidden></div></article>
         <article class="card"><h2>Reset demo</h2><p class="subtle">Clear browser changes and reload the original seed data. This cannot be undone unless you export a backup first.</p><button class="btn danger" data-action="reset">Reset all local data</button></article>
         <article class="card"><h2>Storage summary</h2><div class="fixture"><span>Players</span><strong>${data.players.length}</strong></div><div class="fixture"><span>Staff</span><strong>${data.staff.length}</strong></div><div class="fixture"><span>Matches</span><strong>${data.matches.length}</strong></div><div class="fixture"><span>Transactions</span><strong>${data.transactions.length}</strong></div></article>
@@ -341,7 +443,8 @@
     let content;
     if (!baseAllowed && !extraAllowed) content = forbidden();
     else if (route === "dashboard") content = dashboardView();
-    else if (["players", "squad", "fitness"].includes(route)) content = playersView(route);
+    else if (["players", "fitness"].includes(route)) content = playersView(route);
+    else if (route === "squad") content = squadBuilderView();
     else if (route === "player-new") content = playerFormView();
     else if (route === "player-stats") content = playerStatsView(parameter);
     else if (route === "staff") content = staffView();
@@ -396,8 +499,34 @@
     const type = form.dataset.form;
     try {
       if (type === "fitness") {
-        db.update((data) => { const player = data.players.find((item) => item.id === values.id); player.fitness = values.fitness; if (values.fitness !== "fit") player.selected = false; });
+        db.update((data) => {
+          const player = data.players.find((item) => item.id === values.id);
+          player.fitness = values.fitness;
+          if (values.fitness !== "fit") {
+            player.selected = false;
+            Object.keys(data.lineup?.starters || {}).forEach((slot) => { if (data.lineup.starters[slot] === player.id) delete data.lineup.starters[slot]; });
+          }
+        });
         navigate(location.hash.slice(1), "Fitness updated.");
+      } else if (type === "lineup-settings") {
+        db.update((data) => {
+          const nextFormation = values.formation;
+          const nextSize = Number(values.squadSize);
+          if (!formations[nextFormation]) throw new Error("Choose a valid formation.");
+          if (nextSize < 11 || nextSize > 23) throw new Error("Squad size must be between 11 and 23.");
+          if (data.lineup.formation !== nextFormation) data.lineup.starters = {};
+          data.lineup.formation = nextFormation;
+          data.lineup.squadSize = nextSize;
+          const assigned = new Set(Object.values(data.lineup.starters));
+          const selected = data.players.filter((player) => player.selected);
+          if (selected.length > nextSize) {
+            const keep = [...selected].sort((a, b) => Number(assigned.has(b.id)) - Number(assigned.has(a.id)) || b.stats.rating - a.stats.rating).slice(0, nextSize);
+            const keepIds = new Set(keep.map((player) => player.id));
+            data.players.forEach((player) => { if (player.selected && !keepIds.has(player.id)) player.selected = false; });
+          }
+        });
+        activeLineupSlot = null;
+        navigate("squad", "Formation and squad size updated.");
       } else if (type === "player-new") {
         db.update((data) => {
           if (data.players.some((player) => player.number === Number(values.number))) throw new Error("That squad number is already in use.");
@@ -445,9 +574,65 @@
     const action = button.dataset.action;
     if (action === "menu") { document.querySelector("#sidebar")?.classList.toggle("open"); return; }
     if (action === "logout") { db.logout(); location.hash = ""; loginView(); return; }
+    if (action === "choose-slot") { activeLineupSlot = button.dataset.slot; render(); return; }
+    if (action === "auto-pick") { autoPickSquad(); return; }
+    if (action === "clear-lineup") {
+      if (!window.confirm("Clear the starting XI and matchday squad?")) return;
+      db.update((data) => { data.lineup.starters = {}; data.players.forEach((player) => { player.selected = false; }); });
+      activeLineupSlot = null; navigate("squad", "Matchday squad cleared."); return;
+    }
+    if (action === "add-squad") {
+      try {
+        db.update((data) => {
+          const selectedCount = data.players.filter((player) => player.selected).length;
+          if (selectedCount >= data.lineup.squadSize) throw new Error(`The ${data.lineup.squadSize}-player squad is full.`);
+          const player = data.players.find((item) => item.id === button.dataset.id);
+          if (!player || player.fitness !== "fit") throw new Error("Only fit players can join the squad.");
+          player.selected = true;
+        });
+        navigate("squad", "Player added to the matchday squad.");
+      } catch (error) { notify(error.message, true); }
+      return;
+    }
+    if (action === "remove-squad") {
+      db.update((data) => {
+        const player = data.players.find((item) => item.id === button.dataset.id);
+        if (player) player.selected = false;
+        Object.keys(data.lineup.starters).forEach((slot) => { if (data.lineup.starters[slot] === button.dataset.id) delete data.lineup.starters[slot]; });
+      });
+      navigate("squad", "Player removed from the matchday squad."); return;
+    }
+    if (action === "assign-player") {
+      try {
+        db.update((data) => {
+          const slot = button.dataset.slot;
+          const definition = formations[data.lineup.formation].find(([key]) => key === slot);
+          const player = data.players.find((item) => item.id === button.dataset.id);
+          if (!definition || !player || !player.selected || player.fitness !== "fit") throw new Error("That player cannot be assigned.");
+          if (player.position !== definition[2]) throw new Error(`This position requires a ${definition[2].toLowerCase()}.`);
+          Object.keys(data.lineup.starters).forEach((key) => { if (data.lineup.starters[key] === player.id) delete data.lineup.starters[key]; });
+          data.lineup.starters[slot] = player.id;
+        });
+        navigate("squad", "Player placed in the starting XI.");
+      } catch (error) { notify(error.message, true); }
+      return;
+    }
+    if (action === "unassign-slot") {
+      db.update((data) => { delete data.lineup.starters[button.dataset.slot]; });
+      navigate("squad", "Player moved to the bench."); return;
+    }
     if (action === "squad") {
-      db.update((data) => { const player = data.players.find((item) => item.id === button.dataset.id); if (player.fitness === "fit") player.selected = !player.selected; });
-      navigate(location.hash.slice(1), "Squad updated."); return;
+      try {
+        db.update((data) => {
+          const player = data.players.find((item) => item.id === button.dataset.id);
+          if (player.fitness !== "fit") return;
+          if (!player.selected && data.players.filter((item) => item.selected).length >= data.lineup.squadSize) throw new Error(`The ${data.lineup.squadSize}-player squad is full.`);
+          player.selected = !player.selected;
+          if (!player.selected) Object.keys(data.lineup.starters).forEach((slot) => { if (data.lineup.starters[slot] === player.id) delete data.lineup.starters[slot]; });
+        });
+        navigate(location.hash.slice(1), "Squad updated.");
+      } catch (error) { notify(error.message, true); }
+      return;
     }
     const deletions = { "delete-player": "players", "delete-staff": "staff", "delete-match": "matches", "delete-transaction": "transactions" };
     if (deletions[action]) {
@@ -456,6 +641,7 @@
       db.update((data) => {
         data[collection] = data[collection].filter((item) => item.id !== button.dataset.id);
         if (action === "delete-player") data.users = data.users.filter((user) => user.playerId !== button.dataset.id);
+        if (action === "delete-player") Object.keys(data.lineup?.starters || {}).forEach((slot) => { if (data.lineup.starters[slot] === button.dataset.id) delete data.lineup.starters[slot]; });
         if (action === "delete-staff") data.users = data.users.filter((user) => user.staffId !== button.dataset.id);
       });
       navigate(location.hash.slice(1), "Item deleted."); return;
@@ -463,6 +649,11 @@
     if (action === "export") {
       const blob = new Blob([JSON.stringify(db.get(), null, 2)], { type: "application/json" });
       const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `gaffer-backup-${new Date().toISOString().slice(0,10)}.json`; link.click(); URL.revokeObjectURL(link.href); notify("Backup exported."); return;
+    }
+    if (action === "sync-cloud") {
+      const synced = await db.pushCloud();
+      navigate("data", synced ? "Club data synced to Vercel Blob." : "Cloud sync is unavailable; changes remain saved locally.");
+      return;
     }
     if (action === "reset") {
       if (!window.confirm("Reset all local changes and sign out?")) return;
