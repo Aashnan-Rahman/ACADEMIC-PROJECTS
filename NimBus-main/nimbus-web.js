@@ -11,6 +11,7 @@
   let session = loadSession();
   let authMode = "login";
   let game = null;
+  let turnTimer = null;
   const aiMemo = new Map();
 
   function loadData() {
@@ -80,7 +81,7 @@
             <p>One pile. One move. No luck to hide behind.</p>
             <div class="poster-meta"><span>01—02 / REMOVE</span><span>LAST PIECE / SCORES</span><span>MOST POINTS / WINS</span></div>
           </div>
-          <div class="welcome-links"><span>WEB EDITION / 2026</span><a href="#instructions">Rules ↗</a><a href="#leaderboard">Rankings ↗</a></div>
+          <div class="welcome-links"><span>WEB EDITION / 2026</span><a href="#instructions">Rules ↗</a><a href="#leaderboard">Rankings ↗</a><a href="#credits">Credits ↗</a></div>
         </section>
         <section class="auth-panel">
           <div class="auth-card">
@@ -107,7 +108,7 @@
       </main>`;
   }
 
-  const navItems = [["home", "Home"], ["setup", "New game"], ["leaderboard", "Leaderboard"], ["instructions", "How to play"]];
+  const navItems = [["home", "Home"], ["setup", "New game"], ["leaderboard", "Leaderboard"], ["instructions", "How to play"], ["credits", "Credits"]];
 
   function shell(content, active) {
     const user = profile();
@@ -175,11 +176,21 @@
       <section class="card instructions">
         <div class="rule"><span class="rule-num">1</span><div><h3>Read the board</h3><p>Every column is a pile. The number below it shows how many pieces remain.</p></div></div>
         <div class="rule"><span class="rule-num">2</span><div><h3>Choose one pile</h3><p>Click any non-empty pile during your turn. Your selected pile will be highlighted.</p></div></div>
-        <div class="rule"><span class="rule-num">3</span><div><h3>Remove one or two</h3><p>Use the controls below the board to remove one or two pieces. You cannot remove more pieces than the pile contains.</p></div></div>
+        <div class="rule"><span class="rule-num">3</span><div><h3>Move before the clock runs out</h3><p>You have 10 seconds to remove one or two pieces. At zero, the game makes a legal one-piece move for you automatically.</p></div></div>
         <div class="rule"><span class="rule-num">4</span><div><h3>Clear piles to score</h3><p>The player who removes the final piece from a pile earns one point. Turns continue until every pile is empty.</p></div></div>
         <div class="rule"><span class="rule-num">5</span><div><h3>Win the match</h3><p>The player with the most points wins. Matches always use an odd number of piles, so there are no draws.</p></div></div>
-        <div class="strategy-tip"><strong>Strategy tip:</strong> Taking a point immediately is tempting, but it is not always the best move. Think about which pile sizes you leave for the next player—the Nimbus AI evaluates the entire remaining game before choosing.</div>
+        <aside class="field-note"><span>FIELD NOTE / 01</span><h3>Don’t chase every point.</h3><p>Clearing a pile now can hand over the better position. Count what remains and decide which pile sizes the next player should inherit.</p></aside>
       </section>`;
+  }
+
+  function creditsView() {
+    return `${pageHeading("Project archive", "Credits")}
+      <section class="credits-grid">
+        <article class="credit-person"><span>01</span><h2>Aashnan Rahman</h2></article>
+        <article class="credit-person"><span>02</span><h2>Syem Aziz</h2></article>
+        <article class="credit-person"><span>03</span><h2>Moudud Hasan</h2></article>
+      </section>
+      <p class="credits-foot">Original concept and C++ project team / NimBus web edition</p>`;
   }
 
   function leaderboardView() {
@@ -211,7 +222,8 @@
       id: makeId("game"), mode, piles: createPiles(Number(values.pileCount)),
       names: [user.name, mode === "ai" ? "Nimbus AI" : (values.opponent.trim() || "Player 2")],
       scores: [0, 0], current: Math.random() < .5 ? 0 : 1, selected: null,
-      status: "playing", message: "Select a pile to begin your turn.", aiPending: false, saved: false
+      status: "playing", message: "Select a pile to begin your turn.", aiPending: false, saved: false,
+      deadline: null
     };
     navigate("game");
   }
@@ -221,7 +233,7 @@
     const aiTurn = game.mode === "ai" && game.current === 1 && game.status === "playing";
     const humanTurn = !aiTurn && game.status === "playing";
     const content = `<section class="game-page">
-      <div class="game-top"><div class="turn-card"><span class="turn-dot"></span><div><small class="muted">Current turn</small><strong>${escapeHtml(game.names[game.current])}</strong></div></div><button class="btn danger" data-action="abandon">Leave match</button></div>
+      <div class="game-top"><div class="turn-card"><span class="turn-dot"></span><div><small class="muted">Current turn</small><strong>${escapeHtml(game.names[game.current])}</strong></div></div>${humanTurn ? `<div class="turn-clock" aria-label="10 second turn countdown"><span class="clock-label">TIME LEFT</span><strong id="turn-seconds">10</strong><span class="clock-unit">SEC</span><div class="timer-track"><i id="timer-fill"></i></div></div>` : `<div class="ai-label">AI / THINKING</div>`}<button class="btn danger" data-action="abandon">Leave match</button></div>
       <article class="card scoreboard"><div class="player-score"><span>${escapeHtml(game.names[0])}</span><strong>${game.scores[0]}</strong></div><span class="versus">VS</span><div class="player-score"><span>${escapeHtml(game.names[1])}</span><strong>${game.scores[1]}</strong></div></article>
       <article class="card board" aria-label="NimBus game board">
         ${game.piles.map((count, index) => `<button class="pile ${game.selected === index ? "selected" : ""}" data-pile="${index}" ${!humanTurn || count === 0 ? "disabled" : ""} aria-label="Pile ${index + 1}, ${count} pieces">
@@ -232,16 +244,61 @@
       <div class="game-controls"><p class="game-message">${aiTurn ? "Nimbus AI is calculating the best move…" : escapeHtml(game.message)}</p><div class="remove-actions"><button class="btn secondary" data-remove="1" ${game.selected === null || !humanTurn ? "disabled" : ""}>Remove 1</button><button class="btn" data-remove="2" ${game.selected === null || !humanTurn || game.piles[game.selected] < 2 ? "disabled" : ""}>Remove 2</button></div></div>
     </section>`;
     if (aiTurn && !game.aiPending) {
+      clearTurnTimer();
       game.aiPending = true;
       const gameId = game.id;
       setTimeout(() => {
         if (!game || game.id !== gameId || game.status !== "playing") return;
+        if (location.hash !== "#game") { game.aiPending = false; return; }
         game.aiPending = false;
         const move = bestAiMove(game.piles);
         performMove(move.pile, move.amount);
       }, 650);
+    } else if (humanTurn) {
+      ensureTurnTimer();
     }
     return content;
+  }
+
+  function clearTurnTimer() {
+    if (turnTimer) clearInterval(turnTimer);
+    turnTimer = null;
+  }
+
+  function ensureTurnTimer() {
+    if (!game || game.status !== "playing") return;
+    if (!game.deadline) game.deadline = Date.now() + 10000;
+    if (turnTimer) return;
+    const gameId = game.id;
+    const update = () => {
+      if (!game || game.id !== gameId || game.status !== "playing" || (game.mode === "ai" && game.current === 1)) {
+        clearTurnTimer();
+        return;
+      }
+      const remaining = Math.max(0, game.deadline - Date.now());
+      const seconds = Math.ceil(remaining / 1000);
+      const secondsNode = document.querySelector("#turn-seconds");
+      const fillNode = document.querySelector("#timer-fill");
+      if (secondsNode) secondsNode.textContent = String(seconds);
+      if (fillNode) {
+        fillNode.style.width = `${remaining / 100}%`;
+        fillNode.classList.toggle("urgent", remaining <= 3000);
+      }
+      if (remaining <= 0) {
+        clearTurnTimer();
+        const expiredGame = game.id;
+        const expiredPlayer = game.current;
+        game.timeoutPending = true;
+        setTimeout(() => {
+          if (!game || game.id !== expiredGame || game.current !== expiredPlayer || location.hash !== "#game") return;
+          const legalPiles = game.piles.map((size, pile) => ({ size, pile })).filter((item) => item.size > 0);
+          const fallback = legalPiles[Math.floor(Math.random() * legalPiles.length)];
+          performMove(fallback.pile, 1, "Time expired — automatic move. ");
+        }, 250);
+      }
+    };
+    turnTimer = setInterval(update, 100);
+    setTimeout(update, 0);
   }
 
   function normalizedKey(piles) { return piles.filter(Boolean).sort((a, b) => a - b).join(","); }
@@ -274,12 +331,15 @@
     return best;
   }
 
-  function performMove(pile, amount) {
+  function performMove(pile, amount, prefix = "") {
     if (!game || game.status !== "playing" || game.piles[pile] < amount || amount < 1 || amount > 2) return;
+    clearTurnTimer();
+    game.timeoutPending = false;
+    game.deadline = null;
     const player = game.current;
     game.piles[pile] -= amount;
-    let message = `${game.names[player]} removed ${amount} from pile ${pile + 1}.`;
-    if (game.piles[pile] === 0) { game.scores[player] += 1; message = `${game.names[player]} cleared pile ${pile + 1} and scored!`; }
+    let message = `${prefix}${game.names[player]} removed ${amount} from pile ${pile + 1}.`;
+    if (game.piles[pile] === 0) { game.scores[player] += 1; message = `${prefix}${game.names[player]} cleared pile ${pile + 1} and scored!`; }
     game.selected = null;
     if (game.piles.every((size) => size === 0)) {
       game.status = "ended";
@@ -294,6 +354,7 @@
 
   function finishGame() {
     if (!game || game.saved) return;
+    clearTurnTimer();
     game.saved = true;
     const winnerIndex = game.scores[0] > game.scores[1] ? 0 : 1;
     const user = profile();
@@ -320,11 +381,17 @@
 
   function render() {
     const route = location.hash.slice(1) || (session ? "home" : "welcome");
+    if (route !== "game" && game && game.status === "playing") {
+      clearTurnTimer();
+      game.deadline = null;
+      game.timeoutPending = false;
+    }
     const user = profile();
     if (session && !user) saveSession(null);
     if (!session) {
       if (route === "instructions") publicShell(instructionsView());
       else if (route === "leaderboard") publicShell(leaderboardView());
+      else if (route === "credits") publicShell(creditsView());
       else welcomeView();
       return;
     }
@@ -332,6 +399,7 @@
     else if (route === "setup") shell(setupView(), "setup");
     else if (route === "leaderboard") shell(leaderboardView(), "leaderboard");
     else if (route === "instructions") shell(instructionsView(), "instructions");
+    else if (route === "credits") shell(creditsView(), "credits");
     else if (route === "game") shell(gameView(), "setup");
     else navigate("home");
   }
@@ -340,21 +408,21 @@
     const tab = event.target.closest("[data-auth-tab]");
     if (tab) { authMode = tab.dataset.authTab; welcomeView(); return; }
     const pile = event.target.closest("[data-pile]");
-    if (pile && game && game.status === "playing" && !(game.mode === "ai" && game.current === 1)) {
+    if (pile && game && game.status === "playing" && !game.timeoutPending && !(game.mode === "ai" && game.current === 1)) {
       game.selected = Number(pile.dataset.pile); render(); return;
     }
     const remove = event.target.closest("[data-remove]");
-    if (remove && game && game.selected !== null) { performMove(game.selected, Number(remove.dataset.remove)); return; }
+    if (remove && game && !game.timeoutPending && game.selected !== null) { performMove(game.selected, Number(remove.dataset.remove)); return; }
     const actionButton = event.target.closest("[data-action]");
     if (!actionButton) { if (event.target.closest(".nav a")) document.querySelector("#sidebar")?.classList.remove("open"); return; }
     const action = actionButton.dataset.action;
     if (action === "guest") guestModal();
     else if (action === "close-modal") modalRoot.innerHTML = "";
     else if (action === "menu") document.querySelector("#sidebar")?.classList.toggle("open");
-    else if (action === "logout") { saveSession(null); game = null; navigate("welcome"); }
-    else if (action === "abandon") { if (confirm("Leave this match? Its result will not be saved.")) { game = null; navigate("home"); } }
-    else if (action === "finish-home") { modalRoot.innerHTML = ""; game = null; navigate("home"); }
-    else if (action === "rematch") { modalRoot.innerHTML = ""; navigate("setup"); }
+    else if (action === "logout") { clearTurnTimer(); saveSession(null); game = null; navigate("welcome"); }
+    else if (action === "abandon") { if (confirm("Leave this match? Its result will not be saved.")) { clearTurnTimer(); game = null; navigate("home"); } }
+    else if (action === "finish-home") { clearTurnTimer(); modalRoot.innerHTML = ""; game = null; navigate("home"); }
+    else if (action === "rematch") { clearTurnTimer(); modalRoot.innerHTML = ""; game = null; navigate("setup"); }
   });
 
   app.addEventListener("change", (event) => {
@@ -393,8 +461,8 @@
     if (!button) return;
     const action = button.dataset.action;
     if (action === "close-modal") modalRoot.innerHTML = "";
-    else if (action === "finish-home") { modalRoot.innerHTML = ""; game = null; navigate("home"); }
-    else if (action === "rematch") { modalRoot.innerHTML = ""; navigate("setup"); }
+    else if (action === "finish-home") { clearTurnTimer(); modalRoot.innerHTML = ""; game = null; navigate("home"); }
+    else if (action === "rematch") { clearTurnTimer(); modalRoot.innerHTML = ""; game = null; navigate("setup"); }
   });
 
   window.addEventListener("hashchange", render);

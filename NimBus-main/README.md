@@ -12,6 +12,22 @@ To run it:
 
 Create an account to keep a player profile, or choose **Play as guest** and enter a nickname. Game records and accounts are stored in the current browser. The leaderboard is shared by accounts and guests using that browser profile.
 
+Each human turn has a 10-second timer. If it reaches zero, the game automatically makes a legal one-piece move for that player. The computer's turn is not timed.
+
+### Deploy to Vercel
+
+This folder is ready for a zero-build static deployment:
+
+1. Push the project to GitHub, GitLab, or Bitbucket.
+2. In Vercel, choose **Add New → Project** and import the repository.
+3. If this repository contains the other academic projects too, set **Root Directory** to `NimBus-main`.
+4. Leave **Framework Preset** as `Other`; keep the build and output-directory overrides empty.
+5. Select **Deploy**.
+
+With the Vercel CLI, run `vercel --cwd NimBus-main` from the repository root (or simply `vercel` if `NimBus-main` is its own repository). The `.vercelignore` file keeps the C++ executable, source, PDF, and terminal score file out of the web deployment.
+
+Accounts and rankings currently use browser storage. This works on Vercel, but each browser has its own separate data. A shared public leaderboard or accounts that work across devices would require a hosted authentication/database service.
+
 ## Original C++ edition
 
 NimBus is an interactive terminal strategy game based on Nim. In NimBus, players remove one or two objects from a pile each turn. Clearing a pile scores a point, and the player with the most points wins.
