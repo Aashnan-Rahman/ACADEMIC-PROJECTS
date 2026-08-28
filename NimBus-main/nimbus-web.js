@@ -12,6 +12,8 @@
   let authMode = "login";
   let game = null;
   let turnTimer = null;
+  let remoteScoresLoaded = false;
+  let scoreSyncInFlight = null;
   const aiMemo = new Map();
 
   function loadData() {
@@ -25,6 +27,52 @@
   }
 
   function saveData() { localStorage.setItem(DATA_KEY, JSON.stringify(data)); }
+
+  async function syncRemoteScores(refreshView = true) {
+    if (scoreSyncInFlight) return scoreSyncInFlight;
+    scoreSyncInFlight = (async () => {
+      try {
+        const response = await fetch("/api/scores", { headers: { Accept: "application/json" }, cache: "no-store" });
+        if (!response.ok) throw new Error("Score service unavailable");
+        const payload = await response.json();
+        if (!Array.isArray(payload.matches)) throw new Error("Invalid score response");
+        const localById = new Map(data.matches.map((match) => [match.id, match]));
+        const remoteIds = new Set(payload.matches.map((match) => match.id));
+        const remote = payload.matches.map((match) => {
+          const local = localById.get(match.id);
+          return { ...match, userId: local?.userId || null, sessionName: local?.sessionName || null, synced: true };
+        });
+        const localOnly = data.matches.filter((match) => !remoteIds.has(match.id));
+        data.matches = [...remote, ...localOnly].sort((a, b) => b.date.localeCompare(a.date));
+        remoteScoresLoaded = true;
+        saveData();
+        if (refreshView && ["#home", "#leaderboard"].includes(location.hash)) render();
+      } catch (_) {
+        remoteScoresLoaded = false;
+      } finally {
+        scoreSyncInFlight = null;
+      }
+    })();
+    return scoreSyncInFlight;
+  }
+
+  async function uploadScore(record) {
+    try {
+      const response = await fetch("/api/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(record)
+      });
+      if (!response.ok) throw new Error("Score upload failed");
+      const local = data.matches.find((match) => match.id === record.id);
+      if (local) local.synced = true;
+      saveData();
+      remoteScoresLoaded = true;
+      notify("Result added to the global leaderboard.");
+    } catch (_) {
+      if (!["localhost", "127.0.0.1"].includes(location.hostname)) notify("Result saved here; global leaderboard sync failed.", true);
+    }
+  }
 
   function loadSession() {
     try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); }
@@ -204,7 +252,8 @@
       if (match.player2 !== "Nimbus AI") { const second = playerEntry(match.player2); second.games += 1; second.points += match.score2; if (match.winner === match.player2) second.wins += 1; }
     });
     const ranked = [...standings.values()].sort((a, b) => b.wins - a.wins || b.points - a.points || a.name.localeCompare(b.name));
-    const content = `${pageHeading("Hall of challengers", "Leaderboard")}
+    const syncBadge = remoteScoresLoaded ? `<span class="sync-state online">GLOBAL / LIVE</span>` : `<span class="sync-state">LOCAL RECORDS</span>`;
+    const content = `${pageHeading("Hall of challengers", "Leaderboard", syncBadge)}
       <article class="card"><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Player</th><th>Games</th><th>Wins</th><th>Points</th><th>Win rate</th></tr></thead><tbody>
         ${ranked.length ? ranked.map((entry, index) => `<tr><td class="rank">#${index + 1}</td><td><strong>${escapeHtml(entry.name)}</strong></td><td>${entry.games}</td><td>${entry.wins}</td><td>${entry.points}</td><td>${Math.round(entry.wins / entry.games * 100)}%</td></tr>`).join("") : `<tr><td colspan="6" class="empty">No completed matches yet. Be the first on the board.</td></tr>`}
       </tbody></table></div></article>`;
@@ -362,7 +411,7 @@
       id: makeId("match"), date: new Date().toISOString(), mode: game.mode === "ai" ? "Vs AI" : "Local",
       player1: game.names[0], player2: game.names[1], score1: game.scores[0], score2: game.scores[1],
       winner: game.names[winnerIndex], userId: session.type === "account" ? user.id : null,
-      sessionName: session.type === "guest" ? user.name : null
+      sessionName: session.type === "guest" ? user.name : null, synced: false
     };
     data.matches.unshift(record);
     if (session.type === "account") {
@@ -371,6 +420,7 @@
       if (winnerIndex === 0) account.wins += 1; else account.losses += 1;
     }
     saveData();
+    uploadScore(record);
     render();
     modalRoot.innerHTML = `<div class="modal-backdrop"><section class="modal"><div class="modal-icon">W</div><p class="eyebrow">Match complete</p><h2>${escapeHtml(record.winner)} wins.</h2><p class="muted">Final score: ${escapeHtml(record.player1)} ${record.score1} — ${record.score2} ${escapeHtml(record.player2)}</p><div class="actions"><button class="btn" data-action="rematch">Play again</button><button class="btn secondary" data-action="finish-home">Dashboard</button></div></section></div>`;
   }
@@ -467,4 +517,5 @@
 
   window.addEventListener("hashchange", render);
   render();
+  syncRemoteScores();
 })();

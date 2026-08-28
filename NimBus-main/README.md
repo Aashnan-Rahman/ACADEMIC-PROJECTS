@@ -26,7 +26,31 @@ This folder is ready for a zero-build static deployment:
 
 With the Vercel CLI, run `vercel --cwd NimBus-main` from the repository root (or simply `vercel` if `NimBus-main` is its own repository). The `.vercelignore` file keeps the C++ executable, source, PDF, and terminal score file out of the web deployment.
 
-Accounts and rankings currently use browser storage. This works on Vercel, but each browser has its own separate data. A shared public leaderboard or accounts that work across devices would require a hosted authentication/database service.
+Accounts currently use browser storage, so each browser has its own separate login. Completed match results and rankings sync through Vercel Blob when deployed; localStorage remains the fallback during offline or local play. Cross-device accounts would still require a hosted authentication service.
+
+### Shared leaderboard with Vercel Blob
+
+The project now includes `api/scores.js`, which stores every completed match as an individual JSON object in the connected Vercel Blob store. The browser reads these records to build a shared leaderboard and retains localStorage as an offline fallback.
+
+After connecting Blob in the Vercel dashboard:
+
+1. Redeploy the project so Vercel installs `@vercel/blob` and injects `BLOB_READ_WRITE_TOKEN` into the function.
+2. Play and complete one match on the deployed site.
+3. Open the leaderboard; its status should read **GLOBAL / LIVE**.
+4. In Vercel, open **Storage → Blob** to see JSON records under `nimbus-matches/`.
+
+To test Blob locally, use Vercel's development server rather than Live Server:
+
+```powershell
+npm install
+vercel link
+vercel env pull .env.local
+vercel dev
+```
+
+Never place `BLOB_READ_WRITE_TOKEN` in browser JavaScript; `api/scores.js` reads it only inside the Vercel Function.
+
+The current function expects a **public** Blob store. Match results contain display names and scores only; passwords and account records are never uploaded. For a private store, change both Blob access values in `api/scores.js` to `private` and serve reads through the Blob SDK.
 
 ## Original C++ edition
 
