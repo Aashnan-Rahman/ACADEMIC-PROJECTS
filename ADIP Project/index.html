@@ -3,139 +3,81 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Image Watermark </title>
+    <meta name="description" content="A browser-based DWT and DCT image watermarking experiment.">
+    <title>Watermark Lab — DWT + DCT</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Advanced Digital Image Processing</p>
-        <h1>Image Watermarking</h1>
-      </div>
-      <a class="ghost-link" href="./ADIP_Project_v4_3.ipynb" download>Notebook</a>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Watermark Lab home"><span class="brand-mark">WL</span><span>Watermark Lab</span></a>
+      <nav aria-label="Page navigation">
+        <a href="#workbench">Workbench</a><a href="#results">Results</a>
+        <a class="notebook-link" href="./ADIP_Project_v4_3.ipynb" download>Download notebook</a>
+      </nav>
     </header>
 
-    <main>
-      <section class="intro">
-        <div>
-          <h2>DWT + DCT Image Watermarking</h2>
-          <p>
-            This portal follows the notebook workflow: convert images to grayscale, resize and
-            binarize the watermark, pad the cover image, embed watermark bits in the HL wavelet
-            sub-band with 8 x 8 DCT blocks, reconstruct, compare quality, and extract the mark.
-          </p>
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="kicker">Advanced Digital Image Processing</p>
+          <h1>Hide the mark.<br><em>Measure the damage.</em></h1>
+          <p class="hero-intro">Embed a binary watermark inside an image with DWT and DCT, then inspect the recovered mark and the quality of the result. Everything runs in your browser.</p>
+          <a class="start-link" href="#workbench">Open the workbench <span aria-hidden="true">↓</span></a>
         </div>
-        <div class="method-grid" aria-label="Notebook workflow">
-          <span>Upload</span>
-          <span>Grayscale</span>
-          <span>Pad</span>
-          <span>DWT</span>
-          <span>DCT Embed</span>
-          <span>Extract</span>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="scan-image"><span class="scan-line"></span><span class="target target-one"></span><span class="target target-two"></span><b>HL<sub>3</sub></b></div>
+          <p><span>METHOD</span> Haar DWT / 8×8 DCT</p><p><span>OUTPUT</span> Watermarked image + extracted bits</p>
         </div>
+      </section>
+
+      <ol class="method-strip" aria-label="Watermarking workflow">
+        <li><span>01</span>Load images</li><li><span>02</span>Split frequencies</li><li><span>03</span>Embed bits</li><li><span>04</span>Reconstruct</li><li><span>05</span>Test recovery</li>
+      </ol>
+
+      <section class="section-heading" id="workbench">
+        <p>01 / Experiment</p><div><h2>Workbench</h2><p>Choose two images, tune the method, and run the comparison.</p></div>
       </section>
 
       <section class="workspace">
         <aside class="controls" aria-label="Embedding controls">
-          <h2>Inputs</h2>
-          <label class="dropzone">
-            <span>Cover image</span>
-            <input id="coverInput" type="file" accept="image/*">
-          </label>
-          <label class="dropzone">
-            <span>Watermark image</span>
-            <input id="watermarkInput" type="file" accept="image/*">
-          </label>
+          <div class="control-heading"><span>Inputs</span><small>PNG, JPG or WebP</small></div>
+          <label class="dropzone"><span class="upload-number">A</span><span><strong>Cover image</strong><small>The image that will carry the mark</small></span><input id="coverInput" type="file" accept="image/*"></label>
+          <label class="dropzone"><span class="upload-number">B</span><span><strong>Watermark image</strong><small>Converted to binary before embedding</small></span><input id="watermarkInput" type="file" accept="image/*"></label>
 
-          <h2>Embedding Controls</h2>
-          <label>
-            DWT level
-            <input id="levelInput" type="range" min="1" max="4" step="1" value="3">
-            <output id="levelValue">3</output>
-          </label>
-          <label>
-            Alpha strength
-            <input id="alphaInput" type="range" min="5" max="250" step="5" value="100">
-            <output id="alphaValue">100</output>
-          </label>
-          <label>
-            Watermark threshold
-            <input id="thresholdInput" type="range" min="0" max="255" step="1" value="127">
-            <output id="thresholdValue">127</output>
-          </label>
-          <label>
-            Processing max side
-            <input id="maxSideInput" type="range" min="512" max="1600" step="128" value="1024">
-            <output id="maxSideValue">1024 px</output>
-          </label>
-          <div class="pair">
-            <label>
-              DCT row
-              <input id="dctYInput" type="number" min="1" max="6" value="3">
-            </label>
-            <label>
-              DCT column
-              <input id="dctXInput" type="number" min="1" max="6" value="3">
-            </label>
-          </div>
-          <button id="runButton" type="button">Embed and Analyze</button>
-          <button id="clearButton" class="secondary" type="button">Clear</button>
+          <div class="control-heading settings-heading"><span>Parameters</span><small>Adjust before running</small></div>
+          <label class="range-control"><span>DWT level <output id="levelValue">3</output></span><input id="levelInput" type="range" min="1" max="4" step="1" value="3"></label>
+          <label class="range-control"><span>Alpha strength <output id="alphaValue">100</output></span><input id="alphaInput" type="range" min="5" max="250" step="5" value="100"></label>
+          <label class="range-control"><span>Watermark threshold <output id="thresholdValue">127</output></span><input id="thresholdInput" type="range" min="0" max="255" step="1" value="127"></label>
+          <label class="range-control"><span>Processing max side <output id="maxSideValue">1024 px</output></span><input id="maxSideInput" type="range" min="512" max="1600" step="128" value="1024"></label>
+          <div class="pair"><label>DCT row<input id="dctYInput" type="number" min="1" max="6" value="3"></label><label>DCT column<input id="dctXInput" type="number" min="1" max="6" value="3"></label></div>
+          <div class="actions"><button id="runButton" type="button">Run experiment</button><button id="clearButton" class="secondary" type="button">Reset</button></div>
           <p id="status" role="status">Choose a cover image and watermark image.</p>
         </aside>
 
-        <section class="results" aria-label="Results">
+        <section class="results" id="results" aria-label="Results">
+          <div class="results-header"><span>Image output</span><span>Results appear here after processing</span></div>
           <div class="gallery">
-            <figure>
-              <canvas id="coverCanvas"></canvas>
-              <figcaption>Cover Image</figcaption>
-            </figure>
-            <figure>
-              <canvas id="watermarkCanvas"></canvas>
-              <figcaption>Watermark Resized to Capacity</figcaption>
-            </figure>
-            <figure>
-              <canvas id="binaryCanvas"></canvas>
-              <figcaption>Binary Watermark Bits</figcaption>
-            </figure>
-            <figure>
-              <canvas id="watermarkedCanvas"></canvas>
-              <figcaption>Watermarked Image</figcaption>
-            </figure>
-            <figure>
-              <canvas id="extractedCanvas"></canvas>
-              <figcaption>Extracted Watermark</figcaption>
-            </figure>
+            <figure><canvas id="coverCanvas"></canvas><figcaption><b>01</b> Cover image</figcaption></figure>
+            <figure><canvas id="watermarkCanvas"></canvas><figcaption><b>02</b> Resized watermark</figcaption></figure>
+            <figure><canvas id="binaryCanvas"></canvas><figcaption><b>03</b> Binary bits</figcaption></figure>
+            <figure><canvas id="watermarkedCanvas"></canvas><figcaption><b>04</b> Watermarked image</figcaption></figure>
+            <figure><canvas id="extractedCanvas"></canvas><figcaption><b>05</b> Extracted watermark</figcaption></figure>
           </div>
-
-          <div class="downloads">
-            <a id="downloadWatermarked" aria-disabled="true">Download Watermarked</a>
-            <a id="downloadExtracted" aria-disabled="true">Download Extracted</a>
-            <a id="downloadBits" aria-disabled="true">Download Bits</a>
-          </div>
+          <div class="downloads"><a id="downloadWatermarked" aria-disabled="true">Watermarked PNG</a><a id="downloadExtracted" aria-disabled="true">Extracted PNG</a><a id="downloadBits" aria-disabled="true">Binary bits PNG</a></div>
         </section>
       </section>
 
-      <section class="stats-section">
-        <h2>Statistics</h2>
-        <div class="stats" id="statsGrid"></div>
-      </section>
+      <section class="section-heading"><p>02 / Analysis</p><div><h2>Quality report</h2><p>Compare image fidelity, capacity, and extraction accuracy.</p></div></section>
+      <section class="stats-section"><div class="stats" id="statsGrid"></div></section>
+      <section class="section-heading"><p>03 / Frequency view</p><div><h2>Wavelet subbands</h2><p>Inspect the horizontal, vertical, and diagonal detail at every level.</p></div></section>
+      <section class="subbands-section"><div class="subbands" id="subbandsGrid"></div></section>
 
-      <section class="subbands-section">
-        <h2>Visualize Subbands</h2>
-        <div class="subbands" id="subbandsGrid"></div>
-      </section>
-
-      <section class="notes">
-        <h2>Notebook Notes</h2>
-        <ul>
-          <li>Higher alpha usually strengthens extraction but can reduce visual quality.</li>
-          <li>Higher DWT levels create smaller watermark capacity because the HL band is smaller.</li>
-          <li>The watermark is resized to the available bit capacity automatically.</li>
-          <li>The displayed watermarked image is cropped back to the uploaded cover size.</li>
-        </ul>
+      <section class="field-notes">
+        <p>Field notes</p>
+        <ul><li><b>Alpha</b> improves recovery as it rises, but stronger values can leave more visible distortion.</li><li><b>DWT level</b> changes capacity: deeper levels leave fewer 8×8 blocks for watermark bits.</li><li><b>Output size</b> matches the original cover; temporary padding is removed after reconstruction.</li></ul>
       </section>
     </main>
-
+    <footer><span>Watermark Lab</span><span>DWT + DCT image watermarking</span></footer>
     <script src="./app.js"></script>
   </body>
 </html>

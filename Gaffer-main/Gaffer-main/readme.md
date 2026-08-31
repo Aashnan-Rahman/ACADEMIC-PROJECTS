@@ -1,14 +1,19 @@
 # Gaffer FC
 
-Gaffer is now a browser-only football club manager. It runs with VS Code Live Server and does not need PHP, MySQL, Node.js, or an internet connection.
+Gaffer FC turns an older football-club database project into a visual browser app. It includes role-based dashboards, player fitness and staff records, transactions, fixtures, and a formation-aware squad builder.
 
-## Run it
+**Live site:** [gaffer-silk.vercel.app/Gaffer-main](https://gaffer-silk.vercel.app/Gaffer-main/)
 
-1. Open this inner `Gaffer-main/Gaffer-main` folder in VS Code.
-2. Install the **Live Server** extension if needed.
-3. Right-click `index.html` and choose **Open with Live Server**.
+## Built with
 
-Do not open `index.html` by double-clicking it: browsers block the JSON seed request on `file://` URLs.
+- HTML and CSS
+- Vanilla JavaScript
+- localStorage for accounts and offline data
+- Vercel Functions and Vercel Blob for shared club records
+
+## Run locally
+
+Open this folder in VS Code, right-click `index.html`, and choose **Open with Live Server**. Live Server uses the localStorage fallback because it cannot run the Vercel API function.
 
 ## Demo accounts
 
@@ -20,22 +25,15 @@ Do not open `index.html` by double-clicking it: browsers block the JSON seed req
 | Owner | `owner` | `owner123` |
 | Player | `10` | `player123` |
 
-The login screen also has one-click demo buttons.
+## Squad builder
 
-## Local data
+Managers can choose a squad size from 11 to 23 and use 4-3-3, 4-4-2, 3-5-2, or 4-2-3-1. Players can be auto-picked or assigned manually to compatible positions. Selected players who are not in the starting XI appear on the bench.
 
-Initial records are read from `data/seed.json`. The demo includes a balanced 19-player roster. Managers can choose a formation and matchday squad size, auto-pick an XI, assign compatible players on a visual pitch, and manage substitutes on the bench.
+## Deploy to Vercel
 
-Changes are always saved in browser `localStorage`. When deployed with a connected public Vercel Blob store, club operations also sync through `api/club-data.js`; login credentials remain browser-local. Admins can use **Club data** to sync manually, export a JSON backup, import it, or reset the demo.
+1. Set the project Root Directory to `Gaffer-main/Gaffer-main`.
+2. Use the `Other` framework preset and leave the build settings empty.
+3. Connect a public Vercel Blob store and redeploy.
+4. Sign in as admin and select **Club data → Sync now**.
 
-## Deploy with Vercel Blob
-
-1. Set the Vercel project **Root Directory** to `Gaffer-main/Gaffer-main` when deploying from the full academic-projects repository.
-2. Use the `Other` framework preset with no build-command or output-directory override.
-3. Connect a **public** Vercel Blob store to the project.
-4. Redeploy so Vercel installs `@vercel/blob` and injects `BLOB_READ_WRITE_TOKEN` into the function.
-5. Log in as the admin and open **Club data → Sync now**. The status should change to `online`.
-
-For local Blob testing, run `npm install`, `vercel link`, `vercel env pull .env.local`, and `vercel dev`. Live Server continues to work with localStorage fallback but cannot execute the `/api/club-data` function.
-
-This storage and login system are intended for a local academic/demo project, not a public production deployment. The old PHP files remain in the folder only as project history and are not used by the new entry point.
+Club records are shared through Blob. Login details stay in the browser and are never uploaded. To test the Blob function locally, use `vercel dev` instead of Live Server.
