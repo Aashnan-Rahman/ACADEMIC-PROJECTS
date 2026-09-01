@@ -17,6 +17,3 @@ Open this folder in VS Code and launch `index.html` with Live Server. Choose a c
 
 The original Python work is included in `ADIP_Project_v4_3.ipynb`, with a separate portal notebook in `ADIP_Project_Watermark_Portal.ipynb`.
 
-## Deploy
-
-Import the repository into Vercel, set the Root Directory to `ADIP Project`, and deploy with the `Other` framework preset. There is no build step.
