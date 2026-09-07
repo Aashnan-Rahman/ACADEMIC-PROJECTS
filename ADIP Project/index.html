@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="A browser-based DWT and DCT image watermarking experiment.">
-    <title>Watermark Lab — DWT + DCT</title>
+    <meta name="description" content="An improved browser-based DWT–DCT image watermarking and robustness experiment.">
+    <title>Watermark Lab v5 — DWT + DCT</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="Watermark Lab home"><span class="brand-mark">WL</span><span>Watermark Lab</span></a>
+      <a class="brand" href="#top" aria-label="Watermark Lab home"><span class="brand-mark">WL</span><span>Watermark Lab <small>v5</small></span></a>
       <nav aria-label="Page navigation">
-        <a href="#workbench">Workbench</a><a href="#results">Results</a>
-        <a class="notebook-link" href="./ADIP_Project_v4_3.ipynb" download>Download notebook</a>
+        <a href="#workbench">Workbench</a><a href="#results">Results</a><a href="#robustness">Robustness</a>
+        <a class="notebook-link" href="./ADIP_Project_v5_improved.ipynb" download>Download v5 notebook</a>
       </nav>
     </header>
 
@@ -20,18 +20,18 @@
       <section class="hero">
         <div class="hero-copy">
           <p class="kicker">Advanced Digital Image Processing</p>
-          <h1>Hide the mark.<br><em>Measure the damage.</em></h1>
-          <p class="hero-intro">Embed a binary watermark inside an image with DWT and DCT, then inspect the recovered mark and the quality of the result. Everything runs in your browser.</p>
+          <h1>Hide the mark.<br><em>Test its survival.</em></h1>
+          <p class="hero-intro">Embed a binary watermark in the LH wavelet subband with block DCT, measure its recovery, and test it against compression, noise, and blur. Everything runs in your browser.</p>
           <a class="start-link" href="#workbench">Open the workbench <span aria-hidden="true">↓</span></a>
         </div>
         <div class="hero-visual" aria-hidden="true">
-          <div class="scan-image"><span class="scan-line"></span><span class="target target-one"></span><span class="target target-two"></span><b>HL<sub>3</sub></b></div>
-          <p><span>METHOD</span> Haar DWT / 8×8 DCT</p><p><span>OUTPUT</span> Watermarked image + extracted bits</p>
+          <div class="scan-image"><span class="scan-line"></span><span class="target target-one"></span><span class="target target-two"></span><b>LH<sub>1</sub></b></div>
+          <p><span>METHOD</span> Haar DWT / LH band / 8×8 DCT</p><p><span>OUTPUT</span> Quality + BER / NC + robustness</p>
         </div>
       </section>
 
       <ol class="method-strip" aria-label="Watermarking workflow">
-        <li><span>01</span>Load images</li><li><span>02</span>Split frequencies</li><li><span>03</span>Embed bits</li><li><span>04</span>Reconstruct</li><li><span>05</span>Test recovery</li>
+        <li><span>01</span>Load images</li><li><span>02</span>Split frequencies</li><li><span>03</span>Embed in LH</li><li><span>04</span>Measure recovery</li><li><span>05</span>Test attacks</li>
       </ol>
 
       <section class="section-heading" id="workbench">
@@ -45,8 +45,8 @@
           <label class="dropzone"><span class="upload-number">B</span><span><strong>Watermark image</strong><small>Converted to binary before embedding</small></span><input id="watermarkInput" type="file" accept="image/*"></label>
 
           <div class="control-heading settings-heading"><span>Parameters</span><small>Adjust before running</small></div>
-          <label class="range-control"><span>DWT level <output id="levelValue">3</output></span><input id="levelInput" type="range" min="1" max="4" step="1" value="3"></label>
-          <label class="range-control"><span>Alpha strength <output id="alphaValue">100</output></span><input id="alphaInput" type="range" min="5" max="250" step="5" value="100"></label>
+          <label class="range-control"><span>DWT level <output id="levelValue">1</output></span><input id="levelInput" type="range" min="1" max="4" step="1" value="1"></label>
+          <label class="range-control"><span>Alpha strength <output id="alphaValue">40</output></span><input id="alphaInput" type="range" min="5" max="250" step="5" value="40"></label>
           <label class="range-control"><span>Watermark threshold <output id="thresholdValue">127</output></span><input id="thresholdInput" type="range" min="0" max="255" step="1" value="127"></label>
           <label class="range-control"><span>Processing max side <output id="maxSideValue">1024 px</output></span><input id="maxSideInput" type="range" min="512" max="1600" step="128" value="1024"></label>
           <div class="pair"><label>DCT row<input id="dctYInput" type="number" min="1" max="6" value="3"></label><label>DCT column<input id="dctXInput" type="number" min="1" max="6" value="3"></label></div>
@@ -72,12 +72,15 @@
       <section class="section-heading"><p>03 / Frequency view</p><div><h2>Wavelet subbands</h2><p>Inspect the horizontal, vertical, and diagonal detail at every level.</p></div></section>
       <section class="subbands-section"><div class="subbands" id="subbandsGrid"></div></section>
 
+      <section class="section-heading" id="robustness"><p>04 / Robustness</p><div><h2>Attack survival</h2><p>Re-extract the watermark after JPEG compression, Gaussian noise, and median blur.</p></div></section>
+      <section class="robustness-section"><div class="robustness" id="robustnessGrid"></div></section>
+
       <section class="field-notes">
         <p>Field notes</p>
-        <ul><li><b>Alpha</b> improves recovery as it rises, but stronger values can leave more visible distortion.</li><li><b>DWT level</b> changes capacity: deeper levels leave fewer 8×8 blocks for watermark bits.</li><li><b>Output size</b> matches the original cover; temporary padding is removed after reconstruction.</li></ul>
+        <ul><li><b>Alpha</b> improves recovery as it rises, but stronger values can leave more visible distortion.</li><li><b>DWT level</b> trades resolution for robustness: level 1 has four times the bit capacity of level 2, while deeper levels may better survive attacks.</li><li><b>Padding</b> uses reflected edge pixels and is removed from the downloaded result.</li><li><b>BER / NC</b> measure the extracted watermark itself: BER 0 and NC 1 indicate perfect recovery.</li></ul>
       </section>
     </main>
-    <footer><span>Watermark Lab</span><span>DWT + DCT image watermarking</span></footer>
+    <footer><span>Watermark Lab v5</span><span>Improved DWT–DCT image watermarking</span></footer>
     <script src="./app.js"></script>
   </body>
 </html>

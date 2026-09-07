@@ -27,6 +27,7 @@ const els = {
   status: document.getElementById("status"),
   statsGrid: document.getElementById("statsGrid"),
   subbandsGrid: document.getElementById("subbandsGrid"),
+  robustnessGrid: document.getElementById("robustnessGrid"),
   downloads: {
     watermarked: document.getElementById("downloadWatermarked"),
     extracted: document.getElementById("downloadExtracted"),
@@ -84,24 +85,33 @@ els.runButton.addEventListener("click", async () => {
     const highest = coeffs.details[level - 1];
     const bitWidth = Math.floor(highest.width / BLOCK);
     const bitHeight = Math.floor(highest.height / BLOCK);
+    if (bitWidth < 1 || bitHeight < 1) {
+      throw new Error("The cover image is too small for this DWT level. Choose a lower level or a larger image.");
+    }
     const wmResized = resizeGray(watermark, bitWidth, bitHeight);
     const wmBits = binarize(wmResized, threshold);
     const embeddedCoeffs = cloneCoeffs(coeffs);
 
-    embedBitsInHL(embeddedCoeffs.details[level - 1].h, highest.width, highest.height, wmBits, bitWidth, bitHeight, alpha, dctY, dctX);
+    embedBitsInLH(embeddedCoeffs.details[level - 1].h, highest.width, highest.height, wmBits, bitWidth, bitHeight, alpha, dctY, dctX);
     const reconstructed = haarIdwt2Levels(embeddedCoeffs, level);
     const clipped = reconstructed.map((value) => clamp(Math.round(value), 0, 255));
     const cropped = cropGray({ data: clipped, width: padded.width, height: padded.height }, cover.width, cover.height);
-    const extracted = extractBitsFromHL(clipped, padded.width, padded.height, level, bitWidth, bitHeight, dctY, dctX);
-    const extractionAccuracy = watermarkAccuracy(wmBits, extracted.bits);
+    const extracted = extractBitsFromLH(clipped, padded.width, padded.height, level, bitWidth, bitHeight, dctY, dctX);
+    const recovery = watermarkMetrics(wmBits, extracted.bits);
 
     drawGray(els.canvases.cover, cover);
     drawGray(els.canvases.watermark, wmResized);
     drawGray(els.canvases.binary, bitsToGray(wmBits, bitWidth, bitHeight));
     drawGray(els.canvases.watermarked, cropped);
     drawGray(els.canvases.extracted, extracted.image);
-    renderStats(makeStats(cover, cropped, padded, bitWidth, bitHeight, wmBits, extracted.bits, extractionAccuracy, level, alpha, threshold, dctY, dctX));
+    renderStats(makeStats(cover, cropped, padded, bitWidth, bitHeight, wmBits, extracted.bits, recovery, level, alpha, threshold, dctY, dctX));
     renderSubbands(coeffs, level);
+    setStatus("Watermark embedded. Running robustness tests...");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    renderRobustness(await runRobustnessTests(
+      { data: clipped, width: padded.width, height: padded.height },
+      wmBits, level, bitWidth, bitHeight, dctY, dctX,
+    ));
     wireDownload(els.downloads.watermarked, els.canvases.watermarked, "watermarked_image.png");
     wireDownload(els.downloads.extracted, els.canvases.extracted, "extracted_watermark.png");
     wireDownload(els.downloads.bits, els.canvases.binary, "embedded_watermark_bits.png");
@@ -118,6 +128,7 @@ els.clearButton.addEventListener("click", () => {
   Object.values(els.canvases).forEach(clearCanvas);
   els.statsGrid.innerHTML = "";
   els.subbandsGrid.innerHTML = "";
+  els.robustnessGrid.innerHTML = "";
   Object.values(els.downloads).forEach((link) => {
     link.removeAttribute("href");
     link.removeAttribute("download");
@@ -164,14 +175,25 @@ async function fileToGray(file, maxSide) {
 }
 
 function padForEmbedding(image, level) {
-  const multiple = (2 ** level) * BLOCK;
+  const multiple = 2 ** level;
   const width = Math.ceil(image.width / multiple) * multiple;
   const height = Math.ceil(image.height / multiple) * multiple;
   const data = new Float32Array(width * height);
-  for (let y = 0; y < image.height; y += 1) {
-    data.set(image.data.subarray(y * image.width, y * image.width + image.width), y * width);
+  for (let y = 0; y < height; y += 1) {
+    const sourceY = reflect101(y, image.height);
+    for (let x = 0; x < width; x += 1) {
+      const sourceX = reflect101(x, image.width);
+      data[y * width + x] = image.data[sourceY * image.width + sourceX];
+    }
   }
   return { data, width, height, multiple };
+}
+
+function reflect101(index, length) {
+  if (length <= 1) return 0;
+  const period = 2 * length - 2;
+  const position = ((index % period) + period) % period;
+  return position < length ? position : period - position;
 }
 
 function resizeGray(image, width, height) {
@@ -337,26 +359,38 @@ function idct8(block) {
   return out;
 }
 
-function embedBitsInHL(hl, width, height, bits, bitWidth, bitHeight, alpha, dctY, dctX) {
+function dctCoefficient(block, u, v) {
+  const cu = u === 0 ? 1 / Math.sqrt(2) : 1;
+  const cv = v === 0 ? 1 / Math.sqrt(2) : 1;
+  let sum = 0;
+  for (let x = 0; x < BLOCK; x += 1) {
+    for (let y = 0; y < BLOCK; y += 1) {
+      sum += block[x * BLOCK + y] * COS[u][x] * COS[v][y];
+    }
+  }
+  return 0.25 * cu * cv * sum;
+}
+
+function embedBitsInLH(lh, width, height, bits, bitWidth, bitHeight, alpha, dctY, dctX) {
   for (let by = 0; by < bitHeight; by += 1) {
     for (let bx = 0; bx < bitWidth; bx += 1) {
-      const block = readBlock(hl, width, by * BLOCK, bx * BLOCK);
+      const block = readBlock(lh, width, by * BLOCK, bx * BLOCK);
       const freq = dct8(block);
       freq[dctY * BLOCK + dctX] = bits[by * bitWidth + bx] ? alpha : -alpha;
-      writeBlock(hl, width, by * BLOCK, bx * BLOCK, idct8(freq));
+      writeBlock(lh, width, by * BLOCK, bx * BLOCK, idct8(freq));
     }
   }
 }
 
-function extractBitsFromHL(data, width, height, level, bitWidth, bitHeight, dctY, dctX) {
+function extractBitsFromLH(data, width, height, level, bitWidth, bitHeight, dctY, dctX) {
   const coeffs = haarDwt2Levels(data, width, height, level);
-  const hl = coeffs.details[level - 1].h;
-  const hlWidth = coeffs.details[level - 1].width;
+  const lh = coeffs.details[level - 1].h;
+  const lhWidth = coeffs.details[level - 1].width;
   const bits = new Uint8Array(bitWidth * bitHeight);
   for (let by = 0; by < bitHeight; by += 1) {
     for (let bx = 0; bx < bitWidth; bx += 1) {
-      const freq = dct8(readBlock(hl, hlWidth, by * BLOCK, bx * BLOCK));
-      bits[by * bitWidth + bx] = freq[dctY * BLOCK + dctX] >= 0 ? 1 : 0;
+      const coefficient = dctCoefficient(readBlock(lh, lhWidth, by * BLOCK, bx * BLOCK), dctY, dctX);
+      bits[by * bitWidth + bx] = coefficient >= 0 ? 1 : 0;
     }
   }
   return {
@@ -393,7 +427,7 @@ function cropGray(image, width, height) {
   return { data, width, height };
 }
 
-function makeStats(original, watermarked, padded, bitWidth, bitHeight, embeddedBits, extractedBits, extractionAccuracy, level, alpha, threshold, dctY, dctX) {
+function makeStats(original, watermarked, padded, bitWidth, bitHeight, embeddedBits, extractedBits, recovery, level, alpha, threshold, dctY, dctX) {
   let mse = 0;
   let changed = 0;
   let origMean = 0;
@@ -441,7 +475,9 @@ function makeStats(original, watermarked, padded, bitWidth, bitHeight, embeddedB
     ["White watermark bits", white],
     ["Black watermark bits", embeddedBits.length - white],
     ["Recovered white bits", extractedWhite],
-    ["Extraction accuracy", `${extractionAccuracy.toFixed(2)}%`],
+    ["Bit error rate (BER)", recovery.ber.toFixed(4)],
+    ["Normalized correlation (NC)", recovery.nc.toFixed(4)],
+    ["Extraction accuracy", `${recovery.accuracy.toFixed(2)}%`],
     ["Changed cover pixels", `${changed} / ${total} (${((changed / total) * 100).toFixed(2)}%)`],
     ["MSE", mse.toFixed(4)],
     ["PSNR", psnr],
@@ -454,13 +490,17 @@ function makeStats(original, watermarked, padded, bitWidth, bitHeight, embeddedB
   ];
 }
 
-function watermarkAccuracy(embeddedBits, extractedBits) {
+function watermarkMetrics(embeddedBits, extractedBits) {
   let correct = 0;
+  let dotProduct = 0;
   const total = Math.min(embeddedBits.length, extractedBits.length);
   for (let i = 0; i < total; i += 1) {
     if (embeddedBits[i] === extractedBits[i]) correct += 1;
+    dotProduct += (embeddedBits[i] ? 1 : -1) * (extractedBits[i] ? 1 : -1);
   }
-  return total === 0 ? 0 : (correct / total) * 100;
+  if (total === 0) return { ber: 1, nc: 0, accuracy: 0 };
+  const ber = 1 - correct / total;
+  return { ber, nc: dotProduct / total, accuracy: (1 - ber) * 100 };
 }
 
 function renderStats(stats) {
@@ -477,10 +517,94 @@ function renderSubbands(coeffs, level) {
   els.subbandsGrid.innerHTML = "";
   for (let i = level - 1; i >= 0; i -= 1) {
     const detail = coeffs.details[i];
-    addSubband(`Level ${i + 1} Horizontal cH`, detail.h, detail.width, detail.height);
-    addSubband(`Level ${i + 1} Vertical cV`, detail.v, detail.width, detail.height);
-    addSubband(`Level ${i + 1} Diagonal cD`, detail.d, detail.width, detail.height);
+    addSubband(`Level ${i + 1} Horizontal (LH)`, detail.h, detail.width, detail.height);
+    addSubband(`Level ${i + 1} Vertical (HL)`, detail.v, detail.width, detail.height);
+    addSubband(`Level ${i + 1} Diagonal (HH)`, detail.d, detail.width, detail.height);
   }
+}
+
+async function runRobustnessTests(image, originalBits, level, bitWidth, bitHeight, dctY, dctX) {
+  const attacks = [
+    ["No attack", image],
+    ["JPEG Q=90", await jpegAttack(image, 0.90)],
+    ["JPEG Q=70", await jpegAttack(image, 0.70)],
+    ["JPEG Q=50", await jpegAttack(image, 0.50)],
+    ["Gaussian noise (sigma=5)", noiseAttack(image, 5, 5005)],
+    ["Gaussian noise (sigma=15)", noiseAttack(image, 15, 5015)],
+    ["Median blur (3x3)", medianBlurAttack(image)],
+  ];
+  return attacks.map(([name, attacked]) => {
+    const recovered = extractBitsFromLH(attacked.data, attacked.width, attacked.height, level, bitWidth, bitHeight, dctY, dctX);
+    return { name, ...watermarkMetrics(originalBits, recovered.bits) };
+  });
+}
+
+function renderRobustness(rows) {
+  const table = document.createElement("table");
+  table.innerHTML = "<thead><tr><th>Attack</th><th>BER</th><th>NC</th><th>Accuracy</th></tr></thead>";
+  const body = document.createElement("tbody");
+  for (const row of rows) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${row.name}</td><td>${row.ber.toFixed(4)}</td><td>${row.nc.toFixed(4)}</td><td>${row.accuracy.toFixed(2)}%</td>`;
+    body.appendChild(tr);
+  }
+  table.appendChild(body);
+  els.robustnessGrid.replaceChildren(table);
+}
+
+async function jpegAttack(image, quality) {
+  const canvas = document.createElement("canvas");
+  drawGray(canvas, image);
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob((value) => value ? resolve(value) : reject(new Error("JPEG compression failed.")), "image/jpeg", quality);
+  });
+  const bitmap = await createImageBitmap(blob);
+  const decoded = document.createElement("canvas");
+  decoded.width = image.width;
+  decoded.height = image.height;
+  const ctx = decoded.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  const rgba = ctx.getImageData(0, 0, image.width, image.height).data;
+  const data = new Uint8Array(image.width * image.height);
+  for (let i = 0, p = 0; i < rgba.length; i += 4, p += 1) data[p] = rgba[i];
+  return { data, width: image.width, height: image.height };
+}
+
+function noiseAttack(image, sigma, seed) {
+  const data = new Uint8Array(image.data.length);
+  let state = seed >>> 0;
+  const random = () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return (state + 1) / 4294967297;
+  };
+  for (let i = 0; i < data.length; i += 1) {
+    const u1 = Math.max(random(), Number.EPSILON);
+    const u2 = random();
+    const gaussian = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    data[i] = clamp(Math.round(image.data[i] + sigma * gaussian), 0, 255);
+  }
+  return { data, width: image.width, height: image.height };
+}
+
+function medianBlurAttack(image) {
+  const data = new Uint8Array(image.data.length);
+  const values = new Array(9);
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      let n = 0;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const sy = clamp(y + dy, 0, image.height - 1);
+          const sx = clamp(x + dx, 0, image.width - 1);
+          values[n++] = image.data[sy * image.width + sx];
+        }
+      }
+      values.sort((a, b) => a - b);
+      data[y * image.width + x] = values[4];
+    }
+  }
+  return { data, width: image.width, height: image.height };
 }
 
 function addSubband(label, data, width, height) {
