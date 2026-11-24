@@ -10,7 +10,7 @@ A collection of coursework and experiments covering web development, algorithms,
 | [Gaffer FC](./Gaffer-main/Gaffer-main/) | Football club and squad management app | JavaScript, Vercel Blob | [Open](https://gaffer-silk.vercel.app/Gaffer-main/) |
 | [NimBus](./NimBus-main/) | Visual strategy game with an exact-solver opponent | JavaScript, C++, Vercel Blob | [Open](https://nimbus-seven-dusky.vercel.app/) |
 | [SAMP](./SAMP-main/) | Console-based student academic management system | C++ | — |
-| [Girvan–Newman](./Big%20Data/) | Community detection checked against NetworkX, with an interactive graph explorer | Python, NetworkX, JavaScript | — |
+| [Girvan–Newman](./Big%20Data/) | Community detection checked against NetworkX, with an interactive graph explorer | Python, NetworkX, JavaScript | [Open](https://aashnan-girvan-newman.vercel.app/) |
 | [SIFT](./Shift%20Invariant%20Feature%20Transform/) | Feature detection implemented from scratch and with OpenCV | Python, OpenCV, NumPy | — |
 | [Mini-Genie](./Mini-Genie/) | Facial and speech emotion-recognition experiments | Python, TensorFlow, OpenCV | — |
 | [FightLadder study](./DL%20Project/) | Reinforcement-learning experiments in a fighting-game environment | Python, Gym Retro, Stable Baselines | — |

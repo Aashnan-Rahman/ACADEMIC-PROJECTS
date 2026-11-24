@@ -12,6 +12,6 @@ The sample has seven nodes and nine edges. Its first split removes edge `1–3` 
 
 ## Interactive explorer
 
-Open [index.html](./index.html) in a browser. Play the removals, scrub to any step, or jump to the next split. The graph and step details show the current communities and the scores used to select the next edge. Paste an edge list or open a text file to use your own graph. Files are processed in the browser.
+Open the [live explorer](https://aashnan-girvan-newman.vercel.app/) or open [index.html](./index.html) locally in a browser. Play the removals, scrub to any step, or jump to the next split. The graph and step details show the current communities and the scores used to select the next edge. Paste an edge list or open a text file to use your own graph. Files are processed in the browser.
 
 The explorer is a static Vercel project. Set the Vercel Root Directory to `Big Data` when importing the repository, or run `npx vercel deploy --prod --cwd "Big Data"` from the repository root after signing in. [Vercel CLI deployment guide](https://vercel.com/docs/cli/deploy)
