@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore Girvan–Newman community detection, one edge removal at a time.">
+  <title>Girvan–Newman Explorer</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./graph.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="./" class="wordmark"><span class="mark" aria-hidden="true">✳</span> Community Detection</a>
+    <a href="./graph.txt" download>Download sample</a>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <h1 id="title">Girvan–Newman <em>Explorer</em></h1>
+      <p>See how a network splits into communities. At each step, remove the edge that carries the most shortest paths, then recalculate the scores.</p>
+    </section>
+    <div class="workspace">
+      <section class="panel simulation" aria-labelledby="network-title">
+        <div class="panel-heading">
+          <h2 id="network-title">Network</h2>
+          <span id="graph-size" class="metadata"></span>
+        </div>
+        <canvas id="network" width="1600" height="960" role="img" aria-label="Network graph. Community membership and edge rankings are listed in the step details."></canvas>
+        <div class="controls">
+          <div class="timeline">
+            <label for="position" id="step-label">Step 0</label>
+            <input type="range" id="position" min="0" max="0" value="0" aria-labelledby="step-label">
+          </div>
+          <div class="buttons">
+            <button type="button" id="play" class="primary">Play</button>
+            <button type="button" id="previous">Previous</button>
+            <button type="button" id="next">Next edge</button>
+            <button type="button" id="split">Next split</button>
+          </div>
+        </div>
+      </section>
+      <div class="sidebar">
+        <section class="panel inspector" aria-labelledby="detail-title">
+          <div class="panel-heading"><h2 id="detail-title">Step details</h2></div>
+          <div class="panel-body">
+            <p id="event" class="event" role="status"></p>
+            <h3 id="community-title">Communities</h3>
+            <ul id="communities" class="communities" aria-labelledby="community-title"></ul>
+            <h3>Highest edge betweenness</h3>
+            <p class="metadata">Scores are for the current network.</p>
+            <ol id="rankings" class="rankings"></ol>
+          </div>
+        </section>
+        <section class="panel input-panel" aria-labelledby="input-title">
+          <div class="panel-heading"><h2 id="input-title">Try your graph</h2></div>
+          <form id="graph-form" class="panel-body">
+            <label for="graph-input" class="metadata">Node count, then an edge list. Number nodes from 0.</label>
+            <textarea id="graph-input" rows="4" spellcheck="false" maxlength="12000">7
+[(0,1),(0,2),(1,2),(1,3),(3,4),(3,5),(3,6),(4,5),(5,6)]</textarea>
+            <div class="buttons">
+              <button class="primary" type="submit">Load graph</button>
+              <button type="button" id="sample">Reset sample</button>
+            </div>
+            <label for="graph-file" class="metadata">Or open a .txt file</label>
+            <input id="graph-file" type="file" accept=".txt,text/plain">
+            <p id="input-status" class="metadata" role="status"></p>
+          </form>
+        </section>
+      </div>
+    </div>
+    <footer>Undirected, unweighted graphs · Up to 60 nodes and 200 edges · Files are processed in your browser</footer>
+  </main>
+</body>
+</html>

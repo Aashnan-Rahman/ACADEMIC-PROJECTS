@@ -1,0 +1,66 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b1018;
+  --panel: #111925;
+  --line: #2b3849;
+  --text: #eff5fc;
+  --muted: #abb9cb;
+  --accent: #a5e9ff;
+  --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font: 100%/1.55 system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+main, .topbar { width: min(1200px, calc(100% - 3rem)); margin-inline: auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 0; border-bottom: 1px solid var(--line); }
+a { color: var(--accent); text-underline-offset: .25em; }
+.wordmark { color: var(--text); text-decoration: none; font-weight: 700; }
+.mark { color: var(--accent); margin-right: .35rem; font-size: 1.25rem; }
+.intro { padding: clamp(2.5rem, 6vw, 5rem) 0 2rem; }
+h1, h2, h3, p, ul, ol { margin: 0; }
+h1 { font-size: clamp(2.1rem, 6vw, 4.5rem); line-height: 1.05; font-weight: 720; letter-spacing: -.045em; }
+h1 em { color: var(--accent); font-style: normal; }
+.intro p { color: var(--muted); max-width: 65ch; margin-top: 1rem; font-size: 1.1rem; }
+.workspace { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(18rem, 1fr); gap: 1.25rem; align-items: start; }
+.sidebar { display: grid; gap: 1.25rem; min-width: 0; }
+.panel { overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: .85rem; }
+.panel-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem; padding: .95rem 1.15rem; border-bottom: 1px solid var(--line); }
+h2 { font-size: 1.05rem; }
+h3 { font-size: .9rem; }
+.metadata, footer { color: var(--muted); font-size: .875rem; }
+canvas { display: block; width: 100%; height: auto; background: radial-gradient(#27384b 1px, transparent 1px) 50% 50% / 20px 20px, #0d1420; }
+.controls, .panel-body { padding: 1rem 1.15rem; }
+.controls { border-top: 1px solid var(--line); }
+.timeline { display: grid; gap: .5rem; margin-bottom: .9rem; }
+.timeline label { font: .9rem var(--mono); color: var(--accent); }
+input[type="range"] { margin: 0; width: 100%; accent-color: var(--accent); }
+.buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+button, input::file-selector-button {
+  border: 1px solid #516278; border-radius: .4rem; padding: .55rem .8rem;
+  background: #192638; color: var(--text); font: inherit; font-size: .875rem; cursor: pointer;
+}
+button.primary { color: #061923; background: var(--accent); border-color: var(--accent); font-weight: 700; }
+button:hover:not(:disabled), input::file-selector-button:hover { filter: brightness(1.18); }
+button:disabled { opacity: .48; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.event { min-height: 2.8rem; margin-bottom: .9rem; color: var(--accent); font-size: .95rem; }
+.communities { list-style: none; display: grid; gap: .35rem; margin: .45rem 0 1.05rem; padding: 0; max-height: 11rem; overflow: auto; }
+.communities li { display: grid; grid-template-columns: .6rem 1fr; gap: .55rem; align-items: baseline; overflow-wrap: anywhere; font: .875rem/1.5 var(--mono); }
+.community-swatch { width: .6rem; height: .6rem; border-radius: 50%; }
+.rankings { padding: 0; margin-top: .4rem; list-style: none; }
+.rankings li { display: flex; justify-content: space-between; padding: .25rem 0; border-top: 1px solid var(--line); font: .875rem/1.5 var(--mono); }
+.rankings li:first-child { color: var(--accent); }
+form { display: grid; gap: .75rem; }
+textarea { width: 100%; resize: vertical; min-height: 5.5rem; padding: .65rem; background: var(--bg); color: var(--text); border: 1px solid #516278; border-radius: .4rem; font: .875rem/1.5 var(--mono); }
+input[type="file"] { width: 100%; color: var(--muted); font: .875rem system-ui, sans-serif; }
+input::file-selector-button { margin-right: .45rem; }
+#input-status[data-error="true"] { color: #fcb6a3; }
+#input-status:empty { display: none; }
+footer { padding: 1.4rem 0 2.5rem; }
+@media (max-width: 800px) {
+  .workspace { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  main, .topbar { width: calc(100% - 1.5rem); }
+  .panel-heading, .controls, .panel-body { padding-inline: .85rem; }
+}
